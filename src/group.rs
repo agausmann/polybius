@@ -1,6 +1,5 @@
 //! Logical groups of pins.
 
-use crate::tri_state::TriStatePin;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
 /// A fixed-size group of output pins.
@@ -12,19 +11,6 @@ pub trait OutputGroup<const LEN: usize> {
     fn set_low(&mut self, index: usize) -> Result<(), Self::Error>;
 
     fn set_high(&mut self, index: usize) -> Result<(), Self::Error>;
-}
-
-/// A fixed-size group of tri-state pins.
-pub trait TriStateGroup<const LEN: usize> {
-    type Error;
-
-    fn get(&mut self, index: usize) -> &mut dyn TriStatePin<Error = Self::Error>;
-
-    fn set_low(&mut self, index: usize) -> Result<(), Self::Error>;
-
-    fn set_high(&mut self, index: usize) -> Result<(), Self::Error>;
-
-    fn set_floating(&mut self, index: usize) -> Result<(), Self::Error>;
 }
 
 /// A fixed-size group of input pins.
@@ -79,62 +65,6 @@ macro_rules! tuple_impls {
                 }
                 $(else if index == $i {
                     self.$i.set_high()
-                })*
-                else {
-                    panic!("index out of bounds")
-                }
-            }
-        }
-
-        impl<$t1, $($t),*> TriStateGroup<$n> for ($t1, $($t),*)
-        where
-            $t1: TriStatePin,
-            $($t: TriStatePin<Error = $t1::Error>,)*
-        {
-            type Error = $t1::Error;
-
-            fn get(&mut self, index: usize) -> &mut dyn TriStatePin<Error = Self::Error> {
-                if index == $i1 {
-                    &mut self.$i1
-                }
-                $(else if index == $i {
-                    &mut self.$i
-                })*
-                else {
-                    panic!("index out of bounds")
-                }
-            }
-
-            fn set_low(&mut self, index: usize) -> Result<(), Self::Error> {
-                if index == $i1 {
-                    self.$i1.set_low()
-                }
-                $(else if index == $i {
-                    self.$i.set_low()
-                })*
-                else {
-                    panic!("index out of bounds")
-                }
-            }
-
-            fn set_high(&mut self, index: usize) -> Result<(), Self::Error> {
-                if index == $i1 {
-                    self.$i1.set_high()
-                }
-                $(else if index == $i {
-                    self.$i.set_high()
-                })*
-                else {
-                    panic!("index out of bounds")
-                }
-            }
-
-            fn set_floating(&mut self, index: usize) -> Result<(), Self::Error> {
-                if index == $i1 {
-                    self.$i1.set_floating()
-                }
-                $(else if index == $i {
-                    self.$i.set_floating()
                 })*
                 else {
                     panic!("index out of bounds")

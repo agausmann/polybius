@@ -1,29 +1,32 @@
-//! Interfaces to the physical hardware of the keyboard.
+//! Key scanning.
 //!
-//! This module defines types that implement common physical layouts of keyboards, how the key
-//! switches are wired up and the software required to poll those switches for their press state.
+//! Defines how the key switches are wired up and how to scan
+//! those switches for their press state.
 
-use crate::group::{InputGroup, TriStateGroup};
+use crate::group::{InputGroup, OutputGroup};
 
 /// An implementation of a "scan matrix".
 ///
 /// The columns are scanned by driving them low one at a time, and the keyswitch states
 /// for each key in the column are polled by checking which row pins are low.
-pub struct ScanMatrix<R, C, const ROWS: usize, const COLS: usize> {
+pub struct ScanMatrix<R, C, D, const ROWS: usize, const COLS: usize> {
     rows: R,
     cols: C,
+    scan_delay: D,
     state: [[bool; COLS]; ROWS],
 }
 
-impl<R, C, const ROWS: usize, const COLS: usize> ScanMatrix<R, C, ROWS, COLS>
+impl<R, C, D, const ROWS: usize, const COLS: usize> ScanMatrix<R, C, D, ROWS, COLS>
 where
     R: Rows<ROWS>,
     C: Cols<COLS, Error = R::Error>,
+    D: FnMut(),
 {
-    pub fn new(rows: R, cols: C) -> Self {
+    pub fn new(rows: R, cols: C, scan_delay: D) -> Self {
         Self {
             rows,
             cols,
+            scan_delay,
             state: [[false; COLS]; ROWS],
         }
     }
@@ -31,7 +34,7 @@ where
     pub fn poll(&mut self) -> Result<(), R::Error> {
         for col in 0..COLS {
             self.cols.set(col)?;
-            //TODO delay needed here?
+            (self.scan_delay)();
             for row in 0..ROWS {
                 self.state[row][col] = self.rows.poll(row)?;
             }
@@ -59,7 +62,7 @@ pub trait Cols<const LEN: usize> {
 /// Each pin in the group directly corresponds to a row or column.
 ///
 /// When used as columns, it will drive the selected column pin low and set the
-/// rest of the columns to floating.
+/// rest of the columns high (or floating if the output is open-drain).
 ///
 /// When this is used to represent rows, it is assumed that the pins are pulled
 /// high by default and driven low when connected to a selected column.
@@ -78,13 +81,13 @@ where
 
 impl<Group, const LEN: usize> Cols<LEN> for Direct<Group>
 where
-    Group: TriStateGroup<LEN>,
+    Group: OutputGroup<LEN>,
 {
     type Error = Group::Error;
 
     fn set(&mut self, index: usize) -> Result<(), Self::Error> {
         for i in 0..LEN {
-            self.0.set_floating(i)?;
+            self.0.set_high(i)?;
         }
         self.0.set_low(index)
     }
