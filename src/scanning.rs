@@ -3,7 +3,7 @@
 //! Defines how the key switches are wired up and how to scan
 //! those switches for their press state.
 
-use crate::group::{InputGroup, OutputGroup};
+use crate::pin_group::{InputGroup, OutputGroup};
 
 /// An implementation of a "scan matrix".
 ///
