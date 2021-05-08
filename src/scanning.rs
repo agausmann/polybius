@@ -13,12 +13,9 @@ pub struct ScanPosition {
 }
 
 /// An implementation of a "scan matrix".
-///
-/// The columns are scanned by driving them low one at a time, and the keyswitch states
-/// for each key in the column are polled by checking which row pins are low.
 pub struct ScanMatrix<W, R, D, const M: usize, const N: usize> {
-    write_group: W,
-    read_group: R,
+    write_lines: W,
+    read_lines: R,
     scan_delay: D,
     old_state: [ScanRow; M],
     new_state: [ScanRow; M],
@@ -26,14 +23,14 @@ pub struct ScanMatrix<W, R, D, const M: usize, const N: usize> {
 
 impl<W, R, D, const M: usize, const N: usize> ScanMatrix<W, R, D, M, N>
 where
-    W: WriteGroup<M>,
-    R: ReadGroup<N, Error = W::Error>,
+    W: WriteLines<M>,
+    R: ReadLines<N, Error = W::Error>,
     D: FnMut(),
 {
-    pub fn new(write_group: W, read_group: R, scan_delay: D) -> Self {
+    pub fn new(write_lines: W, read_lines: R, scan_delay: D) -> Self {
         Self {
-            write_group,
-            read_group,
+            write_lines,
+            read_lines,
             scan_delay,
             old_state: [Default::default(); M],
             new_state: [Default::default(); M],
@@ -43,10 +40,10 @@ where
     pub fn poll(&mut self) -> Result<(), W::Error> {
         //TODO ghosting
         for i in 0..M {
-            self.write_group.set(i)?;
+            self.write_lines.set(i)?;
             (self.scan_delay)();
             self.old_state[i] = self.new_state[i];
-            self.new_state[i] = self.read_group.poll()?;
+            self.new_state[i] = self.read_lines.poll()?;
         }
         Ok(())
     }
@@ -68,28 +65,31 @@ where
     }
 }
 
-pub trait ReadGroup<const LEN: usize> {
+pub trait ReadLines<const LEN: usize> {
     type Error;
 
     fn poll(&mut self) -> Result<ScanRow, Self::Error>;
 }
 
-pub trait WriteGroup<const LEN: usize> {
+pub trait WriteLines<const LEN: usize> {
     type Error;
 
     fn set(&mut self, index: usize) -> Result<(), Self::Error>;
 }
 
-/// Each pin in the group directly corresponds to a row or column.
+/// A WriteLines or ReadLines, made from an OutputGroup or InputGroup, where
+/// each pin in the group corresponds directly to a read or write line in the
+/// matrix.
 ///
-/// When used as columns, it will drive the selected column pin low and set the
-/// rest of the columns high (or floating if the output is open-drain).
+/// When used as a [`WriteLines`], it will drive the selected line low and set the
+/// rest of the lines high (or floating if the output is open-drain).
 ///
-/// When this is used to represent rows, it is assumed that the pins are pulled
-/// high by default and driven low when connected to a selected column.
-pub struct Direct<Group>(Group);
+/// When used as [`ReadLines`], it is assumed that the lines are pulled high by
+/// default and connected to a write line when the corresponding key is
+/// pressed, therefore being driven low when that write line is selected.
+pub struct Direct<Group>(pub Group);
 
-impl<Group, const LEN: usize> ReadGroup<LEN> for Direct<Group>
+impl<Group, const LEN: usize> ReadLines<LEN> for Direct<Group>
 where
     Group: InputGroup<LEN>,
 {
@@ -106,7 +106,7 @@ where
     }
 }
 
-impl<Group, const LEN: usize> WriteGroup<LEN> for Direct<Group>
+impl<Group, const LEN: usize> WriteLines<LEN> for Direct<Group>
 where
     Group: OutputGroup<LEN>,
 {
@@ -116,6 +116,7 @@ where
         for i in 0..LEN {
             self.0.set_high(i)?;
         }
-        self.0.set_low(index)
+        self.0.set_low(index)?;
+        Ok(())
     }
 }
