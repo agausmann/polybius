@@ -5,66 +5,76 @@
 
 use crate::pin_group::{InputGroup, OutputGroup};
 
+pub type ScanRow = u32;
+
+pub struct ScanPosition {
+    pub write_index: u8,
+    pub read_index: u8,
+}
+
 /// An implementation of a "scan matrix".
 ///
 /// The columns are scanned by driving them low one at a time, and the keyswitch states
 /// for each key in the column are polled by checking which row pins are low.
-pub struct ScanMatrix<R, C, D, const ROWS: usize, const COLS: usize> {
-    rows: R,
-    cols: C,
+pub struct ScanMatrix<W, R, D, const M: usize, const N: usize> {
+    write_group: W,
+    read_group: R,
     scan_delay: D,
-    old_state: [[bool; COLS]; ROWS],
-    new_state: [[bool; COLS]; ROWS],
+    old_state: [ScanRow; M],
+    new_state: [ScanRow; M],
 }
 
-impl<R, C, D, const ROWS: usize, const COLS: usize> ScanMatrix<R, C, D, ROWS, COLS>
+impl<W, R, D, const M: usize, const N: usize> ScanMatrix<W, R, D, M, N>
 where
-    R: Rows<ROWS>,
-    C: Cols<COLS, Error = R::Error>,
+    W: WriteGroup<M>,
+    R: ReadGroup<N, Error = W::Error>,
     D: FnMut(),
 {
-    pub fn new(rows: R, cols: C, scan_delay: D) -> Self {
+    pub fn new(write_group: W, read_group: R, scan_delay: D) -> Self {
         Self {
-            rows,
-            cols,
+            write_group,
+            read_group,
             scan_delay,
-            old_state: [[false; COLS]; ROWS],
-            new_state: [[false; COLS]; ROWS],
+            old_state: [Default::default(); M],
+            new_state: [Default::default(); M],
         }
     }
 
-    pub fn poll(&mut self) -> Result<(), R::Error> {
-        for col in 0..COLS {
-            self.cols.set(col)?;
+    pub fn poll(&mut self) -> Result<(), W::Error> {
+        //TODO ghosting
+        for i in 0..M {
+            self.write_group.set(i)?;
             (self.scan_delay)();
-            for row in 0..ROWS {
-                self.old_state[row][col] = self.new_state[row][col];
-                self.new_state[row][col] = self.rows.poll(row)?;
-            }
+            self.old_state[i] = self.new_state[i];
+            self.new_state[i] = self.read_group.poll()?;
         }
         Ok(())
     }
 
-    pub fn is_pressed(&self, row: usize, col: usize) -> bool {
-        self.new_state[row][col]
+    pub fn is_pressed(&self, pos: ScanPosition) -> bool {
+        (self.new_state[pos.write_index as usize] & (1 << pos.read_index)) != 0
     }
 
-    pub fn just_pressed(&self, row: usize, col: usize) -> bool {
-        self.new_state[row][col] && !self.old_state[row][col]
+    pub fn just_pressed(&self, pos: ScanPosition) -> bool {
+        ((self.new_state[pos.write_index as usize] & !self.old_state[pos.write_index as usize])
+            & (1 << pos.read_index))
+            != 0
     }
 
-    pub fn just_released(&self, row: usize, col: usize) -> bool {
-        !self.new_state[row][col] && self.old_state[row][col]
+    pub fn just_released(&self, pos: ScanPosition) -> bool {
+        ((!self.new_state[pos.write_index as usize] & self.old_state[pos.write_index as usize])
+            & (1 << pos.read_index))
+            != 0
     }
 }
 
-pub trait Rows<const LEN: usize> {
+pub trait ReadGroup<const LEN: usize> {
     type Error;
 
-    fn poll(&mut self, index: usize) -> Result<bool, Self::Error>;
+    fn poll(&mut self) -> Result<ScanRow, Self::Error>;
 }
 
-pub trait Cols<const LEN: usize> {
+pub trait WriteGroup<const LEN: usize> {
     type Error;
 
     fn set(&mut self, index: usize) -> Result<(), Self::Error>;
@@ -79,18 +89,24 @@ pub trait Cols<const LEN: usize> {
 /// high by default and driven low when connected to a selected column.
 pub struct Direct<Group>(Group);
 
-impl<Group, const LEN: usize> Rows<LEN> for Direct<Group>
+impl<Group, const LEN: usize> ReadGroup<LEN> for Direct<Group>
 where
     Group: InputGroup<LEN>,
 {
     type Error = Group::Error;
 
-    fn poll(&mut self, index: usize) -> Result<bool, Self::Error> {
-        self.0.is_low(index)
+    fn poll(&mut self) -> Result<ScanRow, Self::Error> {
+        let mut acc = 0;
+        for i in 0..LEN {
+            if self.0.is_low(i)? {
+                acc |= 1 << i;
+            }
+        }
+        Ok(acc)
     }
 }
 
-impl<Group, const LEN: usize> Cols<LEN> for Direct<Group>
+impl<Group, const LEN: usize> WriteGroup<LEN> for Direct<Group>
 where
     Group: OutputGroup<LEN>,
 {
