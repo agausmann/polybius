@@ -3,6 +3,11 @@ name = "kbforge"
 version = "0.1.0"
 authors = ["Adam Gausmann <agausmann@fastmail.com>"]
 edition = "2018"
+description = "A framework for USB keyboard firmwares"
+repository = "https://github.com/agausmann/kbforge"
+license = "BSD-1-Clause"
+keywords = ["keyboard", "firmware", "usb"]
+categories = ["embedded", "no-std"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
