@@ -13,7 +13,8 @@ pub struct ScanMatrix<R, C, D, const ROWS: usize, const COLS: usize> {
     rows: R,
     cols: C,
     scan_delay: D,
-    state: [[bool; COLS]; ROWS],
+    old_state: [[bool; COLS]; ROWS],
+    new_state: [[bool; COLS]; ROWS],
 }
 
 impl<R, C, D, const ROWS: usize, const COLS: usize> ScanMatrix<R, C, D, ROWS, COLS>
@@ -27,7 +28,8 @@ where
             rows,
             cols,
             scan_delay,
-            state: [[false; COLS]; ROWS],
+            old_state: [[false; COLS]; ROWS],
+            new_state: [[false; COLS]; ROWS],
         }
     }
 
@@ -36,14 +38,23 @@ where
             self.cols.set(col)?;
             (self.scan_delay)();
             for row in 0..ROWS {
-                self.state[row][col] = self.rows.poll(row)?;
+                self.old_state[row][col] = self.new_state[row][col];
+                self.new_state[row][col] = self.rows.poll(row)?;
             }
         }
         Ok(())
     }
 
     pub fn is_pressed(&self, row: usize, col: usize) -> bool {
-        self.state[row][col]
+        self.new_state[row][col]
+    }
+
+    pub fn just_pressed(&self, row: usize, col: usize) -> bool {
+        self.new_state[row][col] && !self.old_state[row][col]
+    }
+
+    pub fn just_released(&self, row: usize, col: usize) -> bool {
+        !self.new_state[row][col] && self.old_state[row][col]
     }
 }
 
