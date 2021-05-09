@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(const_generics, const_evaluatable_checked)]
 
 pub mod diodes;
 pub mod keycode;

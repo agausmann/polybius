@@ -1,16 +1,23 @@
 //! Typestate for declaring diode presence and direction.
 
-use crate::scanning::ScanPosition;
-
 pub struct KeyPosition {
-    pub row: u8,
-    pub col: u8,
+    pub row: usize,
+    pub col: usize,
 }
 
-pub trait DiodeConfiguration {
+pub struct ScanPosition {
+    pub write_index: usize,
+    pub read_index: usize,
+}
+
+pub trait DiodeConfiguration<const ROWS: usize, const COLS: usize> {
     const CAN_GHOST: bool;
+    const WRITE_LINES: usize;
+    const READ_LINES: usize;
 
     fn scan_position(pos: KeyPosition) -> ScanPosition;
+
+    fn key_position(pos: ScanPosition) -> KeyPosition;
 }
 
 /// Diodes are present; current is allowed to flow from rows to columns.
@@ -18,14 +25,24 @@ pub struct RowToCol {
     _private: (),
 }
 
-impl DiodeConfiguration for RowToCol {
+impl<const ROWS: usize, const COLS: usize> DiodeConfiguration<ROWS, COLS> for RowToCol {
     const CAN_GHOST: bool = false;
+    const WRITE_LINES: usize = COLS;
+    const READ_LINES: usize = ROWS;
 
     #[inline]
     fn scan_position(pos: KeyPosition) -> ScanPosition {
         ScanPosition {
             read_index: pos.row,
             write_index: pos.col,
+        }
+    }
+
+    #[inline]
+    fn key_position(pos: ScanPosition) -> KeyPosition {
+        KeyPosition {
+            row: pos.read_index,
+            col: pos.write_index,
         }
     }
 }
@@ -35,14 +52,24 @@ pub struct ColToRow {
     _private: (),
 }
 
-impl DiodeConfiguration for ColToRow {
+impl<const ROWS: usize, const COLS: usize> DiodeConfiguration<ROWS, COLS> for ColToRow {
     const CAN_GHOST: bool = false;
+    const WRITE_LINES: usize = ROWS;
+    const READ_LINES: usize = COLS;
 
     #[inline]
     fn scan_position(pos: KeyPosition) -> ScanPosition {
         ScanPosition {
             read_index: pos.col,
             write_index: pos.row,
+        }
+    }
+
+    #[inline]
+    fn key_position(pos: ScanPosition) -> KeyPosition {
+        KeyPosition {
+            row: pos.write_index,
+            col: pos.read_index,
         }
     }
 }
@@ -52,14 +79,24 @@ pub struct NoDiodes {
     _private: (),
 }
 
-impl DiodeConfiguration for NoDiodes {
+impl<const ROWS: usize, const COLS: usize> DiodeConfiguration<ROWS, COLS> for NoDiodes {
     const CAN_GHOST: bool = true;
+    const WRITE_LINES: usize = ROWS;
+    const READ_LINES: usize = COLS;
 
     #[inline]
     fn scan_position(pos: KeyPosition) -> ScanPosition {
         ScanPosition {
             read_index: pos.col,
             write_index: pos.row,
+        }
+    }
+
+    #[inline]
+    fn key_position(pos: ScanPosition) -> KeyPosition {
+        KeyPosition {
+            row: pos.write_index,
+            col: pos.read_index,
         }
     }
 }
