@@ -1,5 +1,6 @@
 //! Mapping physical keys to keycodes.
 
+use crate::keycode::qmk::{KC_NO, KC_TRANSPARENT};
 use crate::keycode::Keycode;
 
 pub trait Keymap<const ROWS: usize, const COLS: usize> {
@@ -14,7 +15,6 @@ impl<const ROWS: usize, const COLS: usize> Keymap<ROWS, COLS> for Simple<ROWS, C
     }
 }
 
-/*
 pub struct Layered<const ROWS: usize, const COLS: usize> {
     layer_mask: u32,
     layers: &'static [Simple<ROWS, COLS>],
@@ -27,7 +27,7 @@ impl<const ROWS: usize, const COLS: usize> Keymap<ROWS, COLS> for Layered<ROWS, 
                 continue;
             }
             match self.layers[i].get(row, col) {
-                Keycode::Transparent => {
+                KC_TRANSPARENT => {
                     continue;
                 }
                 other => {
@@ -35,7 +35,6 @@ impl<const ROWS: usize, const COLS: usize> Keymap<ROWS, COLS> for Layered<ROWS, 
                 }
             }
         }
-        Keycode::None
+        KC_NO
     }
 }
-*/
