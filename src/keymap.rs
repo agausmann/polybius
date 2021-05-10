@@ -15,14 +15,16 @@ impl<const ROWS: usize, const COLS: usize> Keymap<ROWS, COLS> for Simple<ROWS, C
     }
 }
 
-pub struct Layered<const ROWS: usize, const COLS: usize> {
+pub struct Layered<const ROWS: usize, const COLS: usize, const LAYERS: usize> {
     layer_mask: u32,
-    layers: &'static [Simple<ROWS, COLS>],
+    layers: [Simple<ROWS, COLS>; LAYERS],
 }
 
-impl<const ROWS: usize, const COLS: usize> Keymap<ROWS, COLS> for Layered<ROWS, COLS> {
+impl<const ROWS: usize, const COLS: usize, const LAYERS: usize> Keymap<ROWS, COLS>
+    for Layered<ROWS, COLS, LAYERS>
+{
     fn get(&self, row: usize, col: usize) -> Keycode {
-        for i in (0..self.layers.len()).rev() {
+        for i in (0..LAYERS).rev() {
             if (self.layer_mask & (1 << i)) == 0 {
                 continue;
             }

@@ -7,6 +7,18 @@ use crate::diodes::{DiodeConfiguration, KeyPosition, ScanPosition};
 use crate::pin_group::{InputGroup, OutputGroup};
 use core::marker::PhantomData;
 
+pub trait Scanner<const ROWS: usize, const COLS: usize> {
+    type Error;
+
+    fn poll(&mut self) -> Result<(), Self::Error>;
+
+    fn is_pressed(&self, row: usize, col: usize) -> bool;
+
+    fn just_pressed(&self, row: usize, col: usize) -> bool;
+
+    fn just_released(&self, row: usize, col: usize) -> bool;
+}
+
 pub type ScanRow = u32;
 
 /// An implementation of a "scan matrix".
@@ -36,8 +48,19 @@ where
             new_state: [Default::default(); ROWS],
         }
     }
+}
 
-    pub fn poll(&mut self) -> Result<(), W::Error> {
+impl<W, R, D, C, const ROWS: usize, const COLS: usize> Scanner<ROWS, COLS>
+    for ScanMatrix<W, R, D, C, ROWS, COLS>
+where
+    C: DiodeConfiguration<ROWS, COLS>,
+    W: WriteLines<{ C::WRITE_LINES }>,
+    R: ReadLines<{ C::READ_LINES }, Error = W::Error>,
+    D: FnMut(),
+{
+    type Error = W::Error;
+
+    fn poll(&mut self) -> Result<(), Self::Error> {
         self.old_state = self.new_state;
         self.new_state = [Default::default(); ROWS];
 
@@ -47,35 +70,28 @@ where
             (self.scan_delay)();
             for j in 0..C::READ_LINES {
                 if self.read_lines.poll(j)? {
-                    let key = C::key_position(ScanPosition {
+                    let KeyPosition { row, col } = C::key_position(ScanPosition {
                         write_index: i,
                         read_index: j,
                     });
 
-                    self.new_state[key.row] |= 1 << key.col;
+                    self.new_state[row] |= 1 << col;
                 }
             }
         }
         Ok(())
     }
 
-    pub fn is_pressed(&self, pos: KeyPosition) -> bool {
-        let pos = C::scan_position(pos);
-        (self.new_state[pos.write_index as usize] & (1 << pos.read_index)) != 0
+    fn is_pressed(&self, row: usize, col: usize) -> bool {
+        (self.new_state[row] & (1 << col)) != 0
     }
 
-    pub fn just_pressed(&self, pos: KeyPosition) -> bool {
-        let pos = C::scan_position(pos);
-        ((self.new_state[pos.write_index as usize] & !self.old_state[pos.write_index as usize])
-            & (1 << pos.read_index))
-            != 0
+    fn just_pressed(&self, row: usize, col: usize) -> bool {
+        ((self.new_state[row] & !self.old_state[row]) & (1 << col)) != 0
     }
 
-    pub fn just_released(&self, pos: KeyPosition) -> bool {
-        let pos = C::scan_position(pos);
-        ((!self.new_state[pos.write_index as usize] & self.old_state[pos.write_index as usize])
-            & (1 << pos.read_index))
-            != 0
+    fn just_released(&self, row: usize, col: usize) -> bool {
+        ((!self.new_state[row] & self.old_state[row]) & (1 << col)) != 0
     }
 }
 
