@@ -2,13 +2,13 @@ use crate::keymap::Keymap;
 use crate::scanner::Scanner;
 use crate::uplink::{KeyAction, KeyEvent, Uplink};
 
-pub struct Core<K, S, U, const ROWS: usize, const COLS: usize> {
+pub struct System<K, S, U, const ROWS: usize, const COLS: usize> {
     keymap: K,
     scanner: S,
     uplink: U,
 }
 
-impl<K, S, U, const ROWS: usize, const COLS: usize> Core<K, S, U, ROWS, COLS>
+impl<K, S, U, const ROWS: usize, const COLS: usize> System<K, S, U, ROWS, COLS>
 where
     K: Keymap<ROWS, COLS>,
     S: Scanner<ROWS, COLS>,
