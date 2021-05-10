@@ -6,7 +6,8 @@ use embedded_hal::digital::v2::{InputPin, OutputPin};
 pub trait OutputGroup<const LEN: usize> {
     type Error;
 
-    fn get(&mut self, index: usize) -> &mut dyn OutputPin<Error = Self::Error>;
+    // NB: this is miscompiled on AVR targets, removing for now.
+    //fn get(&mut self, index: usize) -> &mut dyn OutputPin<Error = Self::Error>;
 
     fn set_low(&mut self, index: usize) -> Result<(), Self::Error>;
 
@@ -17,7 +18,8 @@ pub trait OutputGroup<const LEN: usize> {
 pub trait InputGroup<const LEN: usize> {
     type Error;
 
-    fn get(&self, index: usize) -> &dyn InputPin<Error = Self::Error>;
+    // NB: same as `OutputGroup::get`
+    //fn get(&self, index: usize) -> &dyn InputPin<Error = Self::Error>;
 
     fn is_low(&self, index: usize) -> Result<bool, Self::Error>;
 
@@ -35,6 +37,7 @@ macro_rules! tuple_impls {
         {
             type Error = $t1::Error;
 
+            /*
             fn get(&mut self, index: usize) -> &mut dyn OutputPin<Error = Self::Error> {
                 if index == $i1 {
                     &mut self.$i1
@@ -46,6 +49,7 @@ macro_rules! tuple_impls {
                     panic!("index out of bounds")
                 }
             }
+            */
 
             fn set_low(&mut self, index: usize) -> Result<(), Self::Error> {
                 if index == $i1 {
@@ -79,6 +83,7 @@ macro_rules! tuple_impls {
         {
             type Error = $t1::Error;
 
+            /*
             fn get(&self, index: usize) -> &dyn InputPin<Error = Self::Error> {
                 if index == $i1 {
                     &self.$i1
@@ -90,6 +95,7 @@ macro_rules! tuple_impls {
                     panic!("index out of bounds")
                 }
             }
+            */
 
             fn is_low(&self, index: usize) -> Result<bool, Self::Error> {
                 if index == $i1 {

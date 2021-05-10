@@ -8,3 +8,5 @@ pub mod pin_group;
 pub mod scanner;
 pub mod system;
 pub mod uplink;
+
+pub mod board;

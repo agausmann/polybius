@@ -11,6 +11,10 @@ categories = ["embedded", "no-std"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+# Board selection
+planck = ["atmega32u4-hal"]
+
 [dependencies]
 usb-device = "0.2"
 usbd-hid = "0.5"
@@ -19,5 +23,10 @@ usbd-hid = "0.5"
 version = "0.2"
 features = ["unproven"]
 
+[dependencies.atmega32u4-hal]
+git = "https://github.com/Rahix/avr-hal.git"
+optional = true
+
 [dev-dependencies]
 embedded-hal-mock = "0.7"
+
