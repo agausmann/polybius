@@ -143,6 +143,7 @@ pub const KC_A: Keycode = Keycode::Hid(HidKeycode::A);
 pub const KC_B: Keycode = Keycode::Hid(HidKeycode::B);
 pub const KC_C: Keycode = Keycode::Hid(HidKeycode::C);
 pub const KC_D: Keycode = Keycode::Hid(HidKeycode::D);
+pub const KC_E: Keycode = Keycode::Hid(HidKeycode::E);
 pub const KC_F: Keycode = Keycode::Hid(HidKeycode::F);
 pub const KC_G: Keycode = Keycode::Hid(HidKeycode::G);
 pub const KC_H: Keycode = Keycode::Hid(HidKeycode::H);
