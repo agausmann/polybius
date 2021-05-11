@@ -16,8 +16,22 @@ impl<const ROWS: usize, const COLS: usize> Keymap<ROWS, COLS> for Simple<ROWS, C
 }
 
 pub struct Layered<const ROWS: usize, const COLS: usize, const LAYERS: usize> {
-    layer_mask: u32,
-    layers: [Simple<ROWS, COLS>; LAYERS],
+    pub layer_mask: u32,
+    pub layers: [Simple<ROWS, COLS>; LAYERS],
+}
+
+impl<const ROWS: usize, const COLS: usize, const LAYERS: usize> Layered<ROWS, COLS, LAYERS> {
+    pub fn is_layer_enabled(&self, layer: usize) -> bool {
+        (self.layer_mask & (1 << layer)) != 0
+    }
+
+    pub fn enable_layer(&mut self, layer: usize) {
+        self.layer_mask |= 1 << layer;
+    }
+
+    pub fn disable_layer(&mut self, layer: usize) {
+        self.layer_mask &= !(1 << layer);
+    }
 }
 
 impl<const ROWS: usize, const COLS: usize, const LAYERS: usize> Keymap<ROWS, COLS>
@@ -25,7 +39,7 @@ impl<const ROWS: usize, const COLS: usize, const LAYERS: usize> Keymap<ROWS, COL
 {
     fn get(&self, row: usize, col: usize) -> Keycode {
         for i in (0..LAYERS).rev() {
-            if (self.layer_mask & (1 << i)) == 0 {
+            if !self.is_layer_enabled(i) {
                 continue;
             }
             match self.layers[i].get(row, col) {
