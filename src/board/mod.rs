@@ -1,4 +1,4 @@
 //! Support packages for keyboards officially supported by KBForge.
 
-#[cfg(feature = "planck")]
-pub mod planck;
+#[cfg(feature = "planck_rev2")]
+pub mod planck_rev2;

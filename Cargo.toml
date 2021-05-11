@@ -13,7 +13,7 @@ categories = ["embedded", "no-std"]
 
 [features]
 # Board selection
-planck = ["atmega32u4-hal"]
+planck_rev2 = ["atmega32u4-hal"]
 
 [dependencies]
 usb-device = "0.2"
