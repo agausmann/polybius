@@ -2,11 +2,6 @@
 
 An experimental library for developing custom keyboard firmwares in Rust.
 
-## Related work
-
-- [keebrs](https://crates.io/crates/keebrs)
-- [keyberon](https://crates.io/crates/keyberon)
-
 ## Goals
 
 - **Increased type safety** / stronger compile-time guarantees compared to
