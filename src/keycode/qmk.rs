@@ -4,6 +4,7 @@ use super::{HidKeycode, Keycode, SystemKeycode};
 
 pub const KC_NO: Keycode = Keycode::System(SystemKeycode::None);
 pub const KC_TRANSPARENT: Keycode = Keycode::System(SystemKeycode::Transparent);
+pub const RESET: Keycode = Keycode::System(SystemKeycode::Reset);
 
 pub const XXXXXXX: Keycode = KC_NO;
 pub const _______: Keycode = KC_TRNS;

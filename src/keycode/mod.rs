@@ -23,6 +23,7 @@ impl From<HidKeycode> for Keycode {
 pub enum SystemKeycode {
     None,
     Transparent,
+    Reset,
 }
 
 /// Keycodes from the USB HID Usage Tables, Keyboard/Keypad Page (0x07).
