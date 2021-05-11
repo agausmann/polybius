@@ -21,3 +21,8 @@ the keymap.
 have prior experience working with QMK at the low level. **Anti-goal: KBForge
 is not intended to have complete feature parity with QMK or be a replacement
 for QMK.**
+
+- Allow components to be implemented "out-of-tree," in contrast to QMK's build
+  system where keyboard and keymap support has to be in-tree / in the same
+project. This is done by leveraging Rust's build tool, Cargo, and the ability
+for individual projects ("crates") to depend on and extend each other.
