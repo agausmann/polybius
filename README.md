@@ -25,4 +25,6 @@ for QMK.**
 - Allow components to be implemented "out-of-tree," in contrast to QMK's build
   system where keyboard and keymap support has to be in-tree / in the same
 project. This is done by leveraging Rust's build tool, Cargo, and the ability
-for individual projects ("crates") to depend on and extend each other.
+for individual projects ("crates") to depend on and extend each other. As an
+example, see [my_kbforge](https://github.com/agausmann/my_kbforge), which is
+where I maintain my personal KBForge keymaps for my keyboards.
