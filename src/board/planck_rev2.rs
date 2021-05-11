@@ -13,6 +13,7 @@ use atmega32u4_hal::port::portf::{PF0, PF1, PF4, PF5, PF6, PF7};
 use atmega32u4_hal::port::PortExt;
 use core::convert::Infallible;
 use embedded_hal::blocking::delay::DelayUs;
+use embedded_hal::digital::v2::OutputPin;
 
 pub const ROWS: usize = 4;
 pub const COLS: usize = 12;
@@ -69,6 +70,7 @@ where
     let portb = dp.PORTB.split();
     let portc = dp.PORTC.split();
     let portd = dp.PORTD.split();
+    let porte = dp.PORTE.split();
     let portf = dp.PORTF.split();
 
     let write_lines = Direct((
@@ -96,5 +98,11 @@ where
     //TODO
     let uplink = Uplink {};
 
-    System::new(keymap, scanner, uplink)
+    let system = System::new(keymap, scanner, uplink);
+
+    // Turn status LED on
+    let mut status_led = porte.pe6.into_output(&porte.ddr);
+    status_led.set_high().ok();
+
+    system
 }
