@@ -16,14 +16,20 @@ default = ["usb"]
 usb = ["usb-device", "usbd-hid"]
 
 # Board selection
-planck_rev2 = ["atmega32u4-hal"]
+planck_rev2 = ["atmega32u4"]
+
+# Chip selection
+atmega32u4 = ["atmega-hal/atmega32u4"]
 
 [dependencies]
-atmega32u4-hal = { git = "https://github.com/Rahix/avr-hal.git", optional = true }
 embedded-hal = { version = "0.2", features = ["unproven"] }
 usb-device = { version = "0.2", optional = true }
-usbd-hid = { version = "0.5", optional = true }
+usbd-hid = { version = "0.6", optional = true }
+
+[dependencies.atmega-hal]
+git = "https://github.com/agausmann/avr-hal.git"
+branch = "patch/kbforge"
+optional = true
 
 [dev-dependencies]
 embedded-hal-mock = "0.7"
-

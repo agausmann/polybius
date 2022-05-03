@@ -26,6 +26,48 @@ pub trait InputGroup<const LEN: usize> {
     fn is_high(&self, index: usize) -> Result<bool, Self::Error>;
 }
 
+impl<T, const LEN: usize> OutputGroup<LEN> for [T; LEN]
+where
+    T: OutputPin,
+{
+    type Error = T::Error;
+
+    /*
+    fn get(&self, index: usize) -> &dyn OutputPin<Error = Self::Error> {
+        &self[index]
+    }
+    */
+
+    fn set_low(&mut self, index: usize) -> Result<(), Self::Error> {
+        self[index].set_low()
+    }
+
+    fn set_high(&mut self, index: usize) -> Result<(), Self::Error> {
+        self[index].set_high()
+    }
+}
+
+impl<T, const LEN: usize> InputGroup<LEN> for [T; LEN]
+where
+    T: InputPin,
+{
+    type Error = T::Error;
+
+    /*
+    fn get(&mut self, index: usize) -> &mut dyn InputPin<Error = Self::Error> {
+        &mut self[index]
+    }
+    */
+
+    fn is_low(&self, index: usize) -> Result<bool, Self::Error> {
+        self[index].is_low()
+    }
+
+    fn is_high(&self, index: usize) -> Result<bool, Self::Error> {
+        self[index].is_high()
+    }
+}
+
 macro_rules! tuple_impls {
     ($(
         ($t1:ident: $i1:tt, $($t:ident: $i:tt),*): $n:expr,
@@ -39,39 +81,27 @@ macro_rules! tuple_impls {
 
             /*
             fn get(&mut self, index: usize) -> &mut dyn OutputPin<Error = Self::Error> {
-                if index == $i1 {
-                    &mut self.$i1
-                }
-                $(else if index == $i {
-                    &mut self.$i
-                })*
-                else {
-                    panic!("index out of bounds")
+                match index {
+                    $i1 => &mut self.$i1,
+                    $( $i => &mut self.$i, )*
+                    _ => panic!("index out of bounds"),
                 }
             }
             */
 
             fn set_low(&mut self, index: usize) -> Result<(), Self::Error> {
-                if index == $i1 {
-                    self.$i1.set_low()
-                }
-                $(else if index == $i {
-                    self.$i.set_low()
-                })*
-                else {
-                    panic!("index out of bounds")
+                match index {
+                    $i1 => self.$i1.set_low(),
+                    $( $i => self.$i.set_low(), )*
+                    _ => panic!("index out of bounds"),
                 }
             }
 
             fn set_high(&mut self, index: usize) -> Result<(), Self::Error> {
-                if index == $i1 {
-                    self.$i1.set_high()
-                }
-                $(else if index == $i {
-                    self.$i.set_high()
-                })*
-                else {
-                    panic!("index out of bounds")
+                match index {
+                    $i1 => self.$i1.set_high(),
+                    $( $i => self.$i.set_high(), )*
+                    _ => panic!("index out of bounds"),
                 }
             }
         }
@@ -85,39 +115,27 @@ macro_rules! tuple_impls {
 
             /*
             fn get(&self, index: usize) -> &dyn InputPin<Error = Self::Error> {
-                if index == $i1 {
-                    &self.$i1
-                }
-                $(else if index == $i {
-                    &self.$i
-                })*
-                else {
-                    panic!("index out of bounds")
+                match index {
+                    $i1 => &self.i1,
+                    $( $i => &self.$i, )*
+                    _ => panic!("index out of bounds"),
                 }
             }
             */
 
             fn is_low(&self, index: usize) -> Result<bool, Self::Error> {
-                if index == $i1 {
-                    self.$i1.is_low()
-                }
-                $(else if index == $i {
-                    self.$i.is_low()
-                })*
-                else {
-                    panic!("index out of bounds")
+                match index {
+                    $i1 => self.$i1.is_low(),
+                    $( $i => self.$i.is_low(), )*
+                    _ => panic!("index out of bounds"),
                 }
             }
 
             fn is_high(&self, index: usize) -> Result<bool, Self::Error> {
-                if index == $i1 {
-                    self.$i1.is_high()
-                }
-                $(else if index == $i {
-                    self.$i.is_high()
-                })*
-                else {
-                    panic!("index out of bounds")
+                match index {
+                    $i1 => self.$i1.is_high(),
+                    $( $i => self.$i.is_high(), )*
+                    _ => panic!("index out of bounds"),
                 }
             }
         }

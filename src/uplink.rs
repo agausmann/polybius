@@ -47,6 +47,7 @@ pub mod usb {
                 hid,
                 report: KeyboardReport {
                     modifier: 0,
+                    reserved: 0,
                     leds: 0,
                     keycodes: [0; 6],
                 },
