@@ -7,7 +7,7 @@ pub trait Keymap<const ROWS: usize, const COLS: usize> {
     fn get(&self, row: usize, col: usize) -> Keycode;
 }
 
-pub type Simple<const ROWS: usize, const COLS: usize> = [[Keycode; COLS]; ROWS];
+pub type Simple<const ROWS: usize, const COLS: usize> = &'static [[Keycode; COLS]; ROWS];
 
 impl<const ROWS: usize, const COLS: usize> Keymap<ROWS, COLS> for Simple<ROWS, COLS> {
     fn get(&self, row: usize, col: usize) -> Keycode {
@@ -17,7 +17,7 @@ impl<const ROWS: usize, const COLS: usize> Keymap<ROWS, COLS> for Simple<ROWS, C
 
 pub struct Layered<const ROWS: usize, const COLS: usize, const LAYERS: usize> {
     pub layer_mask: u32,
-    pub layers: [Simple<ROWS, COLS>; LAYERS],
+    pub layers: &'static [[[Keycode; COLS]; ROWS]; LAYERS],
 }
 
 impl<const ROWS: usize, const COLS: usize, const LAYERS: usize> Layered<ROWS, COLS, LAYERS> {
@@ -42,7 +42,7 @@ impl<const ROWS: usize, const COLS: usize, const LAYERS: usize> Keymap<ROWS, COL
             if !self.is_layer_enabled(i) {
                 continue;
             }
-            match self.layers[i].get(row, col) {
+            match self.layers[i][col][row] {
                 KC_TRANSPARENT => {
                     continue;
                 }
