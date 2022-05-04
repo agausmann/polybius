@@ -1,4 +1,4 @@
-use crate::keycode::{HidKeycode, Keycode};
+use crate::keycode::Keycode;
 
 pub struct KeyEvent {
     pub keycode: Keycode,
@@ -21,6 +21,7 @@ pub trait Uplink {
 #[cfg(feature = "usb")]
 pub mod usb {
     use super::*;
+    use crate::keycode::HidKeycode;
     use usb_device::bus::{UsbBus, UsbBusAllocator};
     use usb_device::device::UsbDevice;
     use usb_device::UsbError;
