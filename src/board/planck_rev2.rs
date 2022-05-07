@@ -1,7 +1,10 @@
 use crate::diodes::ColToRow;
+use crate::keycode::Keycode;
 use crate::keymap::Keymap;
 use crate::scanner::{Direct, ScanMatrix};
-use crate::uplink::KeyEvent;
+use crate::uplink::{KeyAction, KeyEvent};
+use atmega_hal::port::mode::Output;
+use atmega_hal::port::PB7;
 use atmega_hal::{
     clock::MHz16,
     delay::Delay,
@@ -48,19 +51,25 @@ fn scan_delay() {
 }
 
 // We can't use the `usb-device` framework, because there isn't a working
-// implementation for AVR yet, and it relies on trait objects anyway, which are
-// miscompiled in AVR at the moment.
-pub struct Uplink {}
+// implementation for AVR yet.
+pub struct Uplink {
+    backlight: Pin<Output, PB7>,
+}
 
 impl crate::uplink::Uplink for Uplink {
     type Error = Infallible;
 
     fn poll(&mut self) -> Result<(), Self::Error> {
-        todo!()
+        Ok(())
     }
 
     fn send(&mut self, event: KeyEvent) -> Result<(), Self::Error> {
-        todo!()
+        if event.action == KeyAction::Pressed {
+            self.backlight.set_high();
+        } else {
+            self.backlight.set_low();
+        }
+        Ok(())
     }
 }
 
@@ -109,7 +118,9 @@ where
     let scanner = Scanner::new(write_lines, read_lines, scan_delay);
 
     //TODO
-    let uplink = Uplink {};
+    let uplink = Uplink {
+        backlight: pins.pb7.into_output(),
+    };
 
     let system = System::new(keymap, scanner, uplink);
 
