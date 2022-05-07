@@ -42,7 +42,7 @@ impl<const ROWS: usize, const COLS: usize, const LAYERS: usize> Keymap<ROWS, COL
             if !self.is_layer_enabled(i) {
                 continue;
             }
-            match self.layers[i][col][row] {
+            match self.layers[i][row][col] {
                 KC_TRANSPARENT => {
                     continue;
                 }
