@@ -1,10 +1,12 @@
 use crate::keycode::Keycode;
 
+#[derive(Clone, Copy, PartialEq)]
 pub struct KeyEvent {
     pub keycode: Keycode,
     pub action: KeyAction,
 }
 
+#[derive(Clone, Copy, PartialEq)]
 pub enum KeyAction {
     Pressed,
     Released,
