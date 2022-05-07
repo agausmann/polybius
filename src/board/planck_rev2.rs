@@ -69,6 +69,20 @@ pub fn build_system<K>(dp: Peripherals, keymap: K) -> System<K>
 where
     K: Keymap<ROWS, COLS>,
 {
+    // Disable JTAG functionality to gain control of pins PF4-PF7.
+    // This procedure has tight timing requirements (4 cycles between writes)
+    // which can't be guaranteed by the codegen/linker with the safe code:
+    // dp.JTAG.mcucr.modify(|_, w| w.jtd().set_bit());
+    // dp.JTAG.mcucr.modify(|_, w| w.jtd().set_bit());
+    unsafe {
+        asm!(
+            "in r25, 0x35",
+            "ori r25, 0x80",
+            "out 0x35, r25",
+            "out 0x35, r25",
+            out("r25") _,
+        );
+    }
     let pins = atmega_hal::pins!(dp);
 
     let write_lines = Direct((
