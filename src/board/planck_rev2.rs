@@ -9,6 +9,7 @@ use atmega_hal::{
     port::mode::{Input, OpenDrain, PullUp},
     port::{Pin, PB0, PB4, PB5, PB6, PC7, PD0, PD4, PD5, PD6, PD7, PF0, PF1, PF4, PF5, PF6, PF7},
 };
+use core::arch::asm;
 use core::convert::Infallible;
 use embedded_hal::blocking::delay::DelayUs;
 
