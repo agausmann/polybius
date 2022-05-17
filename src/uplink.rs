@@ -37,6 +37,7 @@ pub mod usb {
         device: UsbDevice<'a, B>,
         hid: HIDClass<'a, B>,
         report: KeyboardReport,
+        pending: bool,
     }
 
     impl<'a, B> UsbHid<'a, B>
@@ -62,6 +63,7 @@ pub mod usb {
                     leds: 0,
                     keycodes: [0; 6],
                 },
+                pending: false,
             }
         }
     }
@@ -75,7 +77,12 @@ pub mod usb {
         fn poll(&mut self) -> Result<(), Self::Error> {
             if self.device.poll(&mut [&mut self.hid]) {
                 let mut report = [0u8; 1];
-                self.hid.pull_raw_output(&mut report)?;
+                if self.hid.pull_raw_output(&mut report).is_ok() {}
+            }
+            if self.pending {
+                if self.hid.push_input(&self.report).is_ok() {
+                    self.pending = false;
+                }
             }
             Ok(())
         }
@@ -99,8 +106,6 @@ pub mod usb {
                 _ => None,
             };
 
-            let mut modified = false;
-
             if let Some(modifier) = modifier {
                 match event.action {
                     KeyAction::Pressed => {
@@ -110,7 +115,7 @@ pub mod usb {
                         self.report.modifier &= !(1 << modifier);
                     }
                 }
-                modified = true;
+                self.pending = true;
             } else {
                 let raw_keycode = hid_keycode as u8;
 
@@ -121,7 +126,7 @@ pub mod usb {
                                 break;
                             } else if *slot == 0 {
                                 *slot = raw_keycode;
-                                modified = true;
+                                self.pending = true;
                                 break;
                             }
                         }
@@ -133,16 +138,12 @@ pub mod usb {
                                     self.report.keycodes[j - 1] = self.report.keycodes[j];
                                 }
                                 self.report.keycodes[self.report.keycodes.len() - 1] = 0;
-                                modified = true;
+                                self.pending = true;
                                 break;
                             }
                         }
                     }
                 }
-            }
-
-            if modified {
-                self.hid.push_input(&self.report)?;
             }
             Ok(())
         }
