@@ -1,10 +1,7 @@
 use crate::diodes::ColToRow;
-use crate::keycode::Keycode;
 use crate::keymap::Keymap;
 use crate::scanner::{Direct, ScanMatrix};
-use crate::uplink::{KeyAction, KeyEvent};
-use atmega_hal::port::mode::Output;
-use atmega_hal::port::PB7;
+use crate::uplink::usb::UsbHid;
 use atmega_hal::{
     clock::MHz16,
     delay::Delay,
@@ -12,9 +9,11 @@ use atmega_hal::{
     port::mode::{Input, OpenDrain, PullUp},
     port::{Pin, PB0, PB4, PB5, PB6, PC7, PD0, PD4, PD5, PD6, PD7, PF0, PF1, PF4, PF5, PF6, PF7},
 };
+use atmega_usbd::UsbBus;
 use core::arch::asm;
-use core::convert::Infallible;
 use embedded_hal::blocking::delay::DelayUs;
+use usb_device::bus::UsbBusAllocator;
+use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
 
 pub const ROWS: usize = 4;
 pub const COLS: usize = 12;
@@ -52,26 +51,7 @@ fn scan_delay() {
 
 // We can't use the `usb-device` framework, because there isn't a working
 // implementation for AVR yet.
-pub struct Uplink {
-    backlight: Pin<Output, PB7>,
-}
-
-impl crate::uplink::Uplink for Uplink {
-    type Error = Infallible;
-
-    fn poll(&mut self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    fn send(&mut self, event: KeyEvent) -> Result<(), Self::Error> {
-        if event.action == KeyAction::Pressed {
-            self.backlight.set_high();
-        } else {
-            self.backlight.set_low();
-        }
-        Ok(())
-    }
-}
+pub type Uplink = UsbHid<'static, UsbBus>;
 
 pub type System<K> = crate::system::System<K, Scanner, Uplink, ROWS, COLS>;
 
@@ -95,6 +75,16 @@ where
     }
     let pins = atmega_hal::pins!(dp);
 
+    // Configure PLL -
+    // Planck has 16MHz external crystal
+    dp.PLL.pllcsr.write(|w| w.pindiv().set_bit());
+    dp.PLL
+        .pllfrq
+        .write(|w| w.pdiv().mhz96().plltm().factor_15().pllusb().set_bit());
+
+    dp.PLL.pllcsr.modify(|_, w| w.plle().set_bit());
+    while dp.PLL.pllcsr.read().plock().bit_is_clear() {}
+
     let write_lines = Direct((
         pins.pd0.into_opendrain_high(),
         pins.pd5.into_opendrain_high(),
@@ -117,16 +107,23 @@ where
     ));
     let scanner = Scanner::new(write_lines, read_lines, scan_delay);
 
-    //TODO
-    let uplink = Uplink {
-        backlight: pins.pb7.into_output(),
-    };
+    static mut USB_BUS: Option<UsbBusAllocator<UsbBus>> = None;
+    let usb_bus: &'static UsbBusAllocator<UsbBus> =
+        unsafe { USB_BUS.insert(UsbBus::new(dp.USB_DEVICE)) };
+
+    // USB device info copied from QMK's planck configuration:
+    let uplink = UsbHid::new(usb_bus, |bus| {
+        UsbDeviceBuilder::new(bus, UsbVidPid(0x03a8, 0xae01))
+            .manufacturer("OLKB")
+            .product("Planck")
+            .device_release(0x0002)
+            .build()
+    });
 
     let system = System::new(keymap, scanner, uplink);
 
     // Turn status LED on
-    let mut status_led = pins.pe6.into_output();
-    status_led.set_high();
+    let _status_led = pins.pe6.into_output_high();
 
     system
 }

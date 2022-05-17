@@ -12,11 +12,10 @@ categories = ["embedded", "no-std"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["usb"]
 usb = ["usb-device", "usbd-hid"]
 
 # Board selection
-planck_rev2 = ["atmega32u4"]
+planck_rev2 = ["atmega32u4", "usb", "atmega-usbd"]
 
 # Chip selection
 atmega32u4 = ["atmega-hal/atmega32u4"]
@@ -29,6 +28,10 @@ usbd-hid = { version = "0.6", optional = true }
 [dependencies.atmega-hal]
 git = "https://github.com/agausmann/avr-hal.git"
 branch = "patch/kbforge"
+optional = true
+
+[dependencies.atmega-usbd]
+git = "https://github.com/agausmann/atmega-usbd.git"
 optional = true
 
 [dev-dependencies]
