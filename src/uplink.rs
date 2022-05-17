@@ -43,8 +43,16 @@ pub mod usb {
     where
         B: UsbBus,
     {
-        pub fn new(device: UsbDevice<'a, B>, alloc: &'a UsbBusAllocator<B>) -> Self {
+        pub fn new<DeviceBuilder>(
+            alloc: &'a UsbBusAllocator<B>,
+            device_builder: DeviceBuilder,
+        ) -> Self
+        where
+            DeviceBuilder: for<'b> FnOnce(&'b UsbBusAllocator<B>) -> UsbDevice<'b, B>,
+        {
             let hid = HIDClass::new(alloc, KeyboardReport::desc(), 10);
+            let device = device_builder(alloc);
+
             Self {
                 device,
                 hid,
