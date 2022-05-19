@@ -1,5 +1,6 @@
 use crate::keycode::Keycode;
 
+// FIXME this is probably unnecessary, just send keycode and action as parameters
 #[derive(Clone, Copy, PartialEq)]
 pub struct KeyEvent {
     pub keycode: Keycode,
@@ -10,6 +11,16 @@ pub struct KeyEvent {
 pub enum KeyAction {
     Pressed,
     Released,
+}
+
+impl KeyAction {
+    pub fn is_pressed(&self) -> bool {
+        *self == Self::Pressed
+    }
+
+    pub fn is_released(&self) -> bool {
+        *self == Self::Released
+    }
 }
 
 pub trait Uplink {

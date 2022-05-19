@@ -1,6 +1,24 @@
+#![allow(non_snake_case)]
+
 //! Aliases for keycodes based on the names used in QMK/TMK.
 
-use super::{HidKeycode, Keycode, SystemKeycode};
+use super::{HidKeycode, Keycode, LayerAction, LayerKeycode, SystemKeycode};
+
+pub const fn MO(layer: u8) -> Keycode {
+    Keycode::Layer(LayerKeycode::new(LayerAction::Momentary, layer))
+}
+
+pub const fn OSL(layer: u8) -> Keycode {
+    Keycode::Layer(LayerKeycode::new(LayerAction::Oneshot, layer))
+}
+
+pub const fn TG(layer: u8) -> Keycode {
+    Keycode::Layer(LayerKeycode::new(LayerAction::Toggle, layer))
+}
+
+pub const fn TO(layer: u8) -> Keycode {
+    Keycode::Layer(LayerKeycode::new(LayerAction::To, layer))
+}
 
 pub const KC_NO: Keycode = Keycode::System(SystemKeycode::None);
 pub const KC_TRANSPARENT: Keycode = Keycode::System(SystemKeycode::Transparent);

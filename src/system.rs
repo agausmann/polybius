@@ -31,6 +31,7 @@ where
                         keycode: self.keymap.get(row, col),
                         action: KeyAction::Pressed,
                     };
+                    self.keymap.handle_key(event.keycode, event.action);
                     self.uplink.send(event).map_err(Error::Uplink)?;
                 }
                 if self.scanner.just_released(row, col) {
@@ -38,6 +39,7 @@ where
                         keycode: self.keymap.get(row, col),
                         action: KeyAction::Released,
                     };
+                    self.keymap.handle_key(event.keycode, event.action);
                     self.uplink.send(event).map_err(Error::Uplink)?;
                 }
             }
