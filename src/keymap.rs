@@ -1,13 +1,12 @@
 //! Mapping physical keys to keycodes.
 
 use crate::keycode::qmk::{KC_NO, KC_TRANSPARENT};
-use crate::keycode::{Keycode, LayerAction};
-use crate::uplink::KeyAction;
+use crate::keycode::{KeyAction, Keycode, LayerAction};
 
 pub trait Keymap<const ROWS: usize, const COLS: usize> {
     fn get(&self, row: usize, col: usize) -> Keycode;
 
-    fn handle_key(&mut self, keycode: Keycode, action: KeyAction) {
+    fn key_event(&mut self, keycode: Keycode, action: KeyAction) {
         let _ = (keycode, action);
     }
 }
@@ -63,7 +62,7 @@ impl<const ROWS: usize, const COLS: usize, const LAYERS: usize> Keymap<ROWS, COL
         KC_NO
     }
 
-    fn handle_key(&mut self, keycode: Keycode, action: KeyAction) {
+    fn key_event(&mut self, keycode: Keycode, action: KeyAction) {
         match keycode {
             Keycode::Layer(layer_key) => match layer_key.action() {
                 LayerAction::Momentary => {

@@ -1,5 +1,21 @@
 pub mod qmk;
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum KeyAction {
+    Pressed,
+    Released,
+}
+
+impl KeyAction {
+    pub fn is_pressed(&self) -> bool {
+        *self == Self::Pressed
+    }
+
+    pub fn is_released(&self) -> bool {
+        *self == Self::Released
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Keycode {
     Hid(HidKeycode),

@@ -1,40 +1,17 @@
-use crate::keycode::Keycode;
-
-// FIXME this is probably unnecessary, just send keycode and action as parameters
-#[derive(Clone, Copy, PartialEq)]
-pub struct KeyEvent {
-    pub keycode: Keycode,
-    pub action: KeyAction,
-}
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum KeyAction {
-    Pressed,
-    Released,
-}
-
-impl KeyAction {
-    pub fn is_pressed(&self) -> bool {
-        *self == Self::Pressed
-    }
-
-    pub fn is_released(&self) -> bool {
-        *self == Self::Released
-    }
-}
+use crate::keycode::{KeyAction, Keycode};
 
 pub trait Uplink {
     type Error;
 
     fn poll(&mut self) -> Result<(), Self::Error>;
 
-    fn send(&mut self, event: KeyEvent) -> Result<(), Self::Error>;
+    fn key_event(&mut self, keycode: Keycode, action: KeyAction) -> Result<(), Self::Error>;
 }
 
 #[cfg(feature = "usb")]
 pub mod usb {
-    use super::*;
-    use crate::keycode::HidKeycode;
+    use super::Uplink;
+    use crate::keycode::{HidKeycode, KeyAction, Keycode};
     use usb_device::bus::{UsbBus, UsbBusAllocator};
     use usb_device::device::UsbDevice;
     use usb_device::UsbError;
@@ -98,8 +75,8 @@ pub mod usb {
             Ok(())
         }
 
-        fn send(&mut self, event: KeyEvent) -> Result<(), Self::Error> {
-            let hid_keycode = match event.keycode {
+        fn key_event(&mut self, keycode: Keycode, action: KeyAction) -> Result<(), Self::Error> {
+            let hid_keycode = match keycode {
                 Keycode::Hid(hid) => hid,
                 _ => return Ok(()),
             };
@@ -118,7 +95,7 @@ pub mod usb {
             };
 
             if let Some(modifier) = modifier {
-                match event.action {
+                match action {
                     KeyAction::Pressed => {
                         self.report.modifier |= 1 << modifier;
                     }
@@ -130,7 +107,7 @@ pub mod usb {
             } else {
                 let raw_keycode = hid_keycode as u8;
 
-                match event.action {
+                match action {
                     KeyAction::Pressed => {
                         for slot in &mut self.report.keycodes {
                             if *slot == raw_keycode {

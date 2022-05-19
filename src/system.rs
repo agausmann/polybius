@@ -1,6 +1,7 @@
+use crate::keycode::KeyAction;
 use crate::keymap::Keymap;
 use crate::scanner::Scanner;
-use crate::uplink::{KeyAction, KeyEvent, Uplink};
+use crate::uplink::Uplink;
 
 pub struct System<K, S, U, const ROWS: usize, const COLS: usize> {
     keymap: K,
@@ -27,20 +28,20 @@ where
         for row in 0..ROWS {
             for col in 0..COLS {
                 if self.scanner.just_pressed(row, col) {
-                    let event = KeyEvent {
-                        keycode: self.keymap.get(row, col),
-                        action: KeyAction::Pressed,
-                    };
-                    self.keymap.handle_key(event.keycode, event.action);
-                    self.uplink.send(event).map_err(Error::Uplink)?;
+                    let keycode = self.keymap.get(row, col);
+                    let action = KeyAction::Pressed;
+                    self.keymap.key_event(keycode, action);
+                    self.uplink
+                        .key_event(keycode, action)
+                        .map_err(Error::Uplink)?;
                 }
                 if self.scanner.just_released(row, col) {
-                    let event = KeyEvent {
-                        keycode: self.keymap.get(row, col),
-                        action: KeyAction::Released,
-                    };
-                    self.keymap.handle_key(event.keycode, event.action);
-                    self.uplink.send(event).map_err(Error::Uplink)?;
+                    let keycode = self.keymap.get(row, col);
+                    let action = KeyAction::Released;
+                    self.keymap.key_event(keycode, action);
+                    self.uplink
+                        .key_event(keycode, action)
+                        .map_err(Error::Uplink)?;
                 }
             }
         }
