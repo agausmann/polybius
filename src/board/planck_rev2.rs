@@ -49,8 +49,6 @@ fn scan_delay() {
     delay.delay_us(30_u8);
 }
 
-// We can't use the `usb-device` framework, because there isn't a working
-// implementation for AVR yet.
 pub type Uplink = UsbHid<'static, UsbBus>;
 
 pub type System<K> = crate::system::System<K, Scanner, Uplink, ROWS, COLS>;
