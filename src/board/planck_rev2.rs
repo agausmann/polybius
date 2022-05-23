@@ -2,9 +2,9 @@ use crate::diodes::ColToRow;
 use crate::keyboard::Keyboard;
 use crate::scanner::{Direct, ScanMatrix};
 use crate::uplink::usb::UsbHid;
-use atmega_hal::pac::TC0;
+use atmega_hal::pac::{PLL, TC0, USB_DEVICE};
 use atmega_hal::port::mode::{Floating, Output};
-use atmega_hal::port::PB7;
+use atmega_hal::port::{PB7, PE6};
 use atmega_hal::{
     clock::MHz16,
     delay::Delay,
@@ -13,7 +13,6 @@ use atmega_hal::{
     port::{Pin, PB0, PB4, PB5, PB6, PC7, PD0, PD4, PD5, PD6, PD7, PF0, PF1, PF4, PF5, PF6, PF7},
 };
 use atmega_usbd::UsbBus;
-use core::arch::asm;
 use core::cmp::min;
 use embedded_hal::blocking::delay::DelayUs;
 use usb_device::bus::UsbBusAllocator;
@@ -143,14 +142,73 @@ impl Keyboard<ROWS, COLS> for PlanckRev2 {
 }
 
 impl PlanckRev2 {
+    /// Initialize the keyboard, taking full ownership of the device
+    /// peripherals.
+    ///
+    /// If you want to keep ownership of the unused parts of the peripherals,
+    /// use [`PlanckRev2::from_parts`] or the [`from_parts!`] macro instead.
     pub fn new(dp: Peripherals) -> Self {
+        let pins = atmega_hal::pins!(dp);
+        Self::from_parts(
+            dp.PLL,
+            dp.TC0,
+            dp.USB_DEVICE,
+            pins.pb0,
+            pins.pb4,
+            pins.pb5,
+            pins.pb6,
+            pins.pb7,
+            pins.pc7,
+            pins.pd0,
+            pins.pd4,
+            pins.pd5,
+            pins.pd6,
+            pins.pd7,
+            pins.pe6,
+            pins.pf0,
+            pins.pf1,
+            pins.pf4,
+            pins.pf5,
+            pins.pf6,
+            pins.pf7,
+        )
+    }
+
+    /// Initialize the keyboard, taking ownership of only the peripherals
+    /// necessary.
+    ///
+    /// The [`from_parts!`] macro is a more convenient way to call this method.
+    pub fn from_parts(
+        pll: PLL,
+        tc0: TC0,
+        usb_device: USB_DEVICE,
+        pb0: Pin<Input<Floating>, PB0>,
+        pb4: Pin<Input<Floating>, PB4>,
+        pb5: Pin<Input<Floating>, PB5>,
+        pb6: Pin<Input<Floating>, PB6>,
+        pb7: Pin<Input<Floating>, PB7>,
+        pc7: Pin<Input<Floating>, PC7>,
+        pd0: Pin<Input<Floating>, PD0>,
+        pd4: Pin<Input<Floating>, PD4>,
+        pd5: Pin<Input<Floating>, PD5>,
+        pd6: Pin<Input<Floating>, PD6>,
+        pd7: Pin<Input<Floating>, PD7>,
+        pe6: Pin<Input<Floating>, PE6>,
+        pf0: Pin<Input<Floating>, PF0>,
+        pf1: Pin<Input<Floating>, PF1>,
+        pf4: Pin<Input<Floating>, PF4>,
+        pf5: Pin<Input<Floating>, PF5>,
+        pf6: Pin<Input<Floating>, PF6>,
+        pf7: Pin<Input<Floating>, PF7>,
+    ) -> Self {
         // Disable JTAG functionality to gain control of pins PF4-PF7.
         // This procedure has tight timing requirements (4 cycles between writes)
         // which can't be guaranteed by the codegen/linker with the safe code:
         // dp.JTAG.mcucr.modify(|_, w| w.jtd().set_bit());
         // dp.JTAG.mcucr.modify(|_, w| w.jtd().set_bit());
+        #[cfg(target_arch = "avr")]
         unsafe {
-            asm!(
+            core::arch::asm!(
                 "in r25, 0x35",
                 "ori r25, 0x80",
                 "out 0x35, r25",
@@ -158,43 +216,41 @@ impl PlanckRev2 {
                 out("r25") _,
             );
         }
-        let pins = atmega_hal::pins!(dp);
 
         // Configure PLL -
         // Planck has 16MHz external crystal
-        dp.PLL.pllcsr.write(|w| w.pindiv().set_bit());
-        dp.PLL
-            .pllfrq
+        pll.pllcsr.write(|w| w.pindiv().set_bit());
+        pll.pllfrq
             .write(|w| w.pdiv().mhz96().plltm().factor_15().pllusb().set_bit());
 
-        dp.PLL.pllcsr.modify(|_, w| w.plle().set_bit());
-        while dp.PLL.pllcsr.read().plock().bit_is_clear() {}
+        pll.pllcsr.modify(|_, w| w.plle().set_bit());
+        while pll.pllcsr.read().plock().bit_is_clear() {}
 
         let write_lines = Direct((
-            pins.pd0.into_opendrain_high(),
-            pins.pd5.into_opendrain_high(),
-            pins.pb5.into_opendrain_high(),
-            pins.pb6.into_opendrain_high(),
+            pd0.into_opendrain_high(),
+            pd5.into_opendrain_high(),
+            pb5.into_opendrain_high(),
+            pb6.into_opendrain_high(),
         ));
         let read_lines = Direct((
-            pins.pf1.into_pull_up_input(),
-            pins.pf0.into_pull_up_input(),
-            pins.pb0.into_pull_up_input(),
-            pins.pc7.into_pull_up_input(),
-            pins.pf4.into_pull_up_input(),
-            pins.pf5.into_pull_up_input(),
-            pins.pf6.into_pull_up_input(),
-            pins.pf7.into_pull_up_input(),
-            pins.pd4.into_pull_up_input(),
-            pins.pd6.into_pull_up_input(),
-            pins.pb4.into_pull_up_input(),
-            pins.pd7.into_pull_up_input(),
+            pf1.into_pull_up_input(),
+            pf0.into_pull_up_input(),
+            pb0.into_pull_up_input(),
+            pc7.into_pull_up_input(),
+            pf4.into_pull_up_input(),
+            pf5.into_pull_up_input(),
+            pf6.into_pull_up_input(),
+            pf7.into_pull_up_input(),
+            pd4.into_pull_up_input(),
+            pd6.into_pull_up_input(),
+            pb4.into_pull_up_input(),
+            pd7.into_pull_up_input(),
         ));
         let scanner = Scanner::new(write_lines, read_lines, scan_delay);
 
         static mut USB_BUS: Option<UsbBusAllocator<UsbBus>> = None;
         let usb_bus: &'static UsbBusAllocator<UsbBus> =
-            unsafe { USB_BUS.insert(UsbBus::new(dp.USB_DEVICE)) };
+            unsafe { USB_BUS.insert(UsbBus::new(usb_device)) };
 
         // USB device info copied from QMK's planck configuration:
         let uplink = UsbHid::new(usb_bus, |bus| {
@@ -205,9 +261,9 @@ impl PlanckRev2 {
                 .build()
         });
 
-        let backlight = Backlight::new(pins.pb7, dp.TC0);
+        let backlight = Backlight::new(pb7, tc0);
 
-        let _status = pins.pe6.into_output_high();
+        let _status = pe6.into_output_high();
 
         Self {
             scanner,
@@ -216,3 +272,50 @@ impl PlanckRev2 {
         }
     }
 }
+
+/// Initialize the keyboard, taking ownership of only the peripherals
+/// necessary.
+///
+/// # Example
+///
+/// ```no_run
+/// use kbforge::board::planck_rev2::{self, PlanckRev2};
+///
+/// let peripherals = atmega_hal::Peripherals::take().unwrap();
+/// let pins = atmega_hal::pins!(peripherals);
+/// let keyboard: PlanckRev2 = planck_rev2::from_parts!(peripherals, pins);
+///
+/// // Can still take other parts:
+/// let tc1 = peripherals.TC3;
+/// let pc6 = pins.pc6;
+/// ```
+#[macro_export]
+macro_rules! planck_rev2 {
+    ($dp:expr, $pins:expr) => {
+        $crate::board::planck_rev2::PlanckRev2::from_parts(
+            $dp.PLL,
+            $dp.TC0,
+            $dp.USB_DEVICE,
+            $pins.pb0,
+            $pins.pb4,
+            $pins.pb5,
+            $pins.pb6,
+            $pins.pb7,
+            $pins.pc7,
+            $pins.pd0,
+            $pins.pd4,
+            $pins.pd5,
+            $pins.pd6,
+            $pins.pd7,
+            $pins.pe6,
+            $pins.pf0,
+            $pins.pf1,
+            $pins.pf4,
+            $pins.pf5,
+            $pins.pf6,
+            $pins.pf7,
+        )
+    };
+}
+#[doc(inline)]
+pub use crate::planck_rev2 as from_parts;
