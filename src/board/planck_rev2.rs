@@ -145,9 +145,15 @@ impl PlanckRev2 {
     /// Initialize the keyboard, taking full ownership of the device
     /// peripherals.
     ///
+    /// # Panics
+    ///
+    /// This function calls `atmega_hal::Peripherals::take()` and will panic if
+    /// the device peripherals have already been taken.
+    ///
     /// If you want to keep ownership of the unused parts of the peripherals,
     /// use [`PlanckRev2::from_parts`] or the [`from_parts!`] macro instead.
-    pub fn new(dp: Peripherals) -> Self {
+    pub fn new() -> Self {
+        let dp = Peripherals::take().unwrap();
         let pins = atmega_hal::pins!(dp);
         Self::from_parts(
             dp.PLL,
