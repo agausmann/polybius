@@ -2,7 +2,8 @@ use crate::diodes::ColToRow;
 use crate::keyboard::Keyboard;
 use crate::scanner::{Direct, ScanMatrix};
 use crate::uplink::usb::UsbHid;
-use atmega_hal::port::mode::Output;
+use atmega_hal::pac::TC0;
+use atmega_hal::port::mode::{Floating, Output};
 use atmega_hal::port::PB7;
 use atmega_hal::{
     clock::MHz16,
@@ -13,6 +14,7 @@ use atmega_hal::{
 };
 use atmega_usbd::UsbBus;
 use core::arch::asm;
+use core::cmp::min;
 use embedded_hal::blocking::delay::DelayUs;
 use usb_device::bus::UsbBusAllocator;
 use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
@@ -53,30 +55,64 @@ fn scan_delay() {
 
 pub type Uplink = UsbHid<'static, UsbBus>;
 
-// TODO variable brightness with PWM
 pub struct Backlight {
+    // 10.3.1: The PB7 pin can serve as an external output for the
+    // Timer/Counter0 Output Compare.
+    // The pin has to be configured as an output to serve this function.
     pin: Pin<Output, PB7>,
+    timer: TC0,
+    current_level: u8,
 }
+
+impl Backlight {
+    fn new(pb7: Pin<Input<Floating>, PB7>, tc0: TC0) -> Backlight {
+        tc0.tccr0b.reset();
+        tc0.tccr0a.reset();
+        tc0.ocr0a.reset();
+
+        //NB: Output compare starts disconnected because initial level is zero.
+        // Setting OCR0A := 0 is not enough to turn off backlight;
+        // the pin must be fully disconnected.
+        tc0.tccr0a
+            .write(|w| w.wgm0().pwm_fast().com0a().disconnected());
+        tc0.tccr0b.write(|w| w.cs0().direct().wgm02().clear_bit());
+
+        Self {
+            pin: pb7.into_output(),
+            timer: tc0,
+            current_level: 0,
+        }
+    }
+}
+
+//FIXME maybe non-linear relation between PWM duty and perceived brihtness?
+const BACKLIGHT_LEVELS: u8 = 4;
+// With 4 levels, the backlight value is contained in 2 bits.g
+// To make it span an 8 bit value, it can be
+// broadcast to each of the four 2-bit chunks:
+const BACKLIGHT_OCR_MULT: u8 = 0b01010101;
 
 impl crate::backlight::Backlight for Backlight {
     fn num_levels(&self) -> u8 {
-        2
+        BACKLIGHT_LEVELS
     }
 
     fn level(&self) -> u8 {
-        if self.pin.is_set_low() {
-            0
-        } else {
-            1
-        }
+        self.current_level
     }
 
     fn set_level(&mut self, level: u8) {
+        let level = min(level, self.num_levels() - 1);
         if level == 0 {
+            self.timer.tccr0a.modify(|_, w| w.com0a().disconnected());
             self.pin.set_low();
         } else {
-            self.pin.set_high();
+            self.timer
+                .ocr0a
+                .write(|w| unsafe { w.bits(BACKLIGHT_OCR_MULT * level) });
+            self.timer.tccr0a.modify(|_, w| w.com0a().match_clear());
         }
+        self.current_level = level;
     }
 }
 
@@ -169,9 +205,7 @@ impl PlanckRev2 {
                 .build()
         });
 
-        let backlight = Backlight {
-            pin: pins.pb7.into_output(),
-        };
+        let backlight = Backlight::new(pins.pb7, dp.TC0);
 
         Self {
             scanner,
