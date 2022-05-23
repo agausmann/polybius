@@ -207,6 +207,8 @@ impl PlanckRev2 {
 
         let backlight = Backlight::new(pins.pb7, dp.TC0);
 
+        let _status = pins.pe6.into_output_high();
+
         Self {
             scanner,
             uplink,
