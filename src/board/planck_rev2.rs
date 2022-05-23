@@ -2,6 +2,8 @@ use crate::diodes::ColToRow;
 use crate::keyboard::Keyboard;
 use crate::scanner::{Direct, ScanMatrix};
 use crate::uplink::usb::UsbHid;
+use atmega_hal::port::mode::Output;
+use atmega_hal::port::PB7;
 use atmega_hal::{
     clock::MHz16,
     delay::Delay,
@@ -51,19 +53,30 @@ fn scan_delay() {
 
 pub type Uplink = UsbHid<'static, UsbBus>;
 
-pub struct Backlight {}
+// TODO variable brightness with PWM
+pub struct Backlight {
+    pin: Pin<Output, PB7>,
+}
 
 impl crate::backlight::Backlight for Backlight {
     fn num_levels(&self) -> u8 {
-        1
+        2
     }
 
     fn level(&self) -> u8 {
-        0
+        if self.pin.is_set_low() {
+            0
+        } else {
+            1
+        }
     }
 
     fn set_level(&mut self, level: u8) {
-        let _ = level;
+        if level == 0 {
+            self.pin.set_low();
+        } else {
+            self.pin.set_high();
+        }
     }
 }
 
@@ -156,8 +169,9 @@ impl PlanckRev2 {
                 .build()
         });
 
-        //TODO
-        let backlight = Backlight {};
+        let backlight = Backlight {
+            pin: pins.pb7.into_output(),
+        };
 
         Self {
             scanner,

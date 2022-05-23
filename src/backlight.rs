@@ -38,7 +38,7 @@ pub trait Backlight {
 
     /// Cycles through backlight levels in increasing order. Loops around to
     /// zero after the maximum level is reached.
-    fn step(&mut self) {
+    fn cycle_step(&mut self) {
         self.set_level((self.level() + 1) % self.num_levels());
     }
 }

@@ -373,3 +373,8 @@ pub const KC_RCTRL: Keycode = Keycode::Hid(HidKeycode::RightControl);
 pub const KC_RSHIFT: Keycode = Keycode::Hid(HidKeycode::RightShift);
 pub const KC_RALT: Keycode = Keycode::Hid(HidKeycode::RightAlt);
 pub const KC_RGUI: Keycode = Keycode::Hid(HidKeycode::RightGui);
+
+// Backlight keycodes https://docs.qmk.fm/#/feature_backlight
+pub const BL_DEC: Keycode = Keycode::System(SystemKeycode::BacklightDown);
+pub const BL_INC: Keycode = Keycode::System(SystemKeycode::BacklightUp);
+pub const BL_STEP: Keycode = Keycode::System(SystemKeycode::BacklightStep);

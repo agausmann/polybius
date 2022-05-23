@@ -47,6 +47,9 @@ pub enum SystemKeycode {
     None,
     Transparent,
     Reset,
+    BacklightDown,
+    BacklightUp,
+    BacklightStep,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
