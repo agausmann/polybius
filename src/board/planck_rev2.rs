@@ -1,5 +1,5 @@
 use crate::diodes::ColToRow;
-use crate::keymap::Keymap;
+use crate::keyboard::Keyboard;
 use crate::scanner::{Direct, ScanMatrix};
 use crate::uplink::usb::UsbHid;
 use atmega_hal::{
@@ -51,77 +51,118 @@ fn scan_delay() {
 
 pub type Uplink = UsbHid<'static, UsbBus>;
 
-pub type System<K> = crate::system::System<K, Scanner, Uplink, ROWS, COLS>;
+pub struct Backlight {}
 
-pub fn build_system<K>(dp: Peripherals, keymap: K) -> System<K>
-where
-    K: Keymap<ROWS, COLS>,
-{
-    // Disable JTAG functionality to gain control of pins PF4-PF7.
-    // This procedure has tight timing requirements (4 cycles between writes)
-    // which can't be guaranteed by the codegen/linker with the safe code:
-    // dp.JTAG.mcucr.modify(|_, w| w.jtd().set_bit());
-    // dp.JTAG.mcucr.modify(|_, w| w.jtd().set_bit());
-    unsafe {
-        asm!(
-            "in r25, 0x35",
-            "ori r25, 0x80",
-            "out 0x35, r25",
-            "out 0x35, r25",
-            out("r25") _,
-        );
+impl crate::backlight::Backlight for Backlight {
+    fn num_levels(&self) -> u8 {
+        1
     }
-    let pins = atmega_hal::pins!(dp);
 
-    // Configure PLL -
-    // Planck has 16MHz external crystal
-    dp.PLL.pllcsr.write(|w| w.pindiv().set_bit());
-    dp.PLL
-        .pllfrq
-        .write(|w| w.pdiv().mhz96().plltm().factor_15().pllusb().set_bit());
+    fn level(&self) -> u8 {
+        0
+    }
 
-    dp.PLL.pllcsr.modify(|_, w| w.plle().set_bit());
-    while dp.PLL.pllcsr.read().plock().bit_is_clear() {}
+    fn set_level(&mut self, level: u8) {
+        let _ = level;
+    }
+}
 
-    let write_lines = Direct((
-        pins.pd0.into_opendrain_high(),
-        pins.pd5.into_opendrain_high(),
-        pins.pb5.into_opendrain_high(),
-        pins.pb6.into_opendrain_high(),
-    ));
-    let read_lines = Direct((
-        pins.pf1.into_pull_up_input(),
-        pins.pf0.into_pull_up_input(),
-        pins.pb0.into_pull_up_input(),
-        pins.pc7.into_pull_up_input(),
-        pins.pf4.into_pull_up_input(),
-        pins.pf5.into_pull_up_input(),
-        pins.pf6.into_pull_up_input(),
-        pins.pf7.into_pull_up_input(),
-        pins.pd4.into_pull_up_input(),
-        pins.pd6.into_pull_up_input(),
-        pins.pb4.into_pull_up_input(),
-        pins.pd7.into_pull_up_input(),
-    ));
-    let scanner = Scanner::new(write_lines, read_lines, scan_delay);
+pub struct PlanckRev2 {
+    scanner: Scanner,
+    uplink: Uplink,
+    backlight: Backlight,
+}
 
-    static mut USB_BUS: Option<UsbBusAllocator<UsbBus>> = None;
-    let usb_bus: &'static UsbBusAllocator<UsbBus> =
-        unsafe { USB_BUS.insert(UsbBus::new(dp.USB_DEVICE)) };
+impl Keyboard<ROWS, COLS> for PlanckRev2 {
+    type Scanner = Scanner;
 
-    // USB device info copied from QMK's planck configuration:
-    let uplink = UsbHid::new(usb_bus, |bus| {
-        UsbDeviceBuilder::new(bus, UsbVidPid(0x03a8, 0xae01))
-            .manufacturer("OLKB")
-            .product("Planck")
-            .device_release(0x0002)
-            .build()
-    });
+    type Uplink = Uplink;
 
-    let system = System::new(keymap, scanner, uplink);
+    type Backlight = Backlight;
 
-    // Turn status LED on
-    let _status_led = pins.pe6.into_output_high();
+    fn scanner(&mut self) -> &mut Self::Scanner {
+        &mut self.scanner
+    }
 
-    system
+    fn uplink(&mut self) -> &mut Self::Uplink {
+        &mut self.uplink
+    }
+
+    fn backlight(&mut self) -> &mut Self::Backlight {
+        &mut self.backlight
+    }
+}
+
+impl PlanckRev2 {
+    pub fn new(dp: Peripherals) -> Self {
+        // Disable JTAG functionality to gain control of pins PF4-PF7.
+        // This procedure has tight timing requirements (4 cycles between writes)
+        // which can't be guaranteed by the codegen/linker with the safe code:
+        // dp.JTAG.mcucr.modify(|_, w| w.jtd().set_bit());
+        // dp.JTAG.mcucr.modify(|_, w| w.jtd().set_bit());
+        unsafe {
+            asm!(
+                "in r25, 0x35",
+                "ori r25, 0x80",
+                "out 0x35, r25",
+                "out 0x35, r25",
+                out("r25") _,
+            );
+        }
+        let pins = atmega_hal::pins!(dp);
+
+        // Configure PLL -
+        // Planck has 16MHz external crystal
+        dp.PLL.pllcsr.write(|w| w.pindiv().set_bit());
+        dp.PLL
+            .pllfrq
+            .write(|w| w.pdiv().mhz96().plltm().factor_15().pllusb().set_bit());
+
+        dp.PLL.pllcsr.modify(|_, w| w.plle().set_bit());
+        while dp.PLL.pllcsr.read().plock().bit_is_clear() {}
+
+        let write_lines = Direct((
+            pins.pd0.into_opendrain_high(),
+            pins.pd5.into_opendrain_high(),
+            pins.pb5.into_opendrain_high(),
+            pins.pb6.into_opendrain_high(),
+        ));
+        let read_lines = Direct((
+            pins.pf1.into_pull_up_input(),
+            pins.pf0.into_pull_up_input(),
+            pins.pb0.into_pull_up_input(),
+            pins.pc7.into_pull_up_input(),
+            pins.pf4.into_pull_up_input(),
+            pins.pf5.into_pull_up_input(),
+            pins.pf6.into_pull_up_input(),
+            pins.pf7.into_pull_up_input(),
+            pins.pd4.into_pull_up_input(),
+            pins.pd6.into_pull_up_input(),
+            pins.pb4.into_pull_up_input(),
+            pins.pd7.into_pull_up_input(),
+        ));
+        let scanner = Scanner::new(write_lines, read_lines, scan_delay);
+
+        static mut USB_BUS: Option<UsbBusAllocator<UsbBus>> = None;
+        let usb_bus: &'static UsbBusAllocator<UsbBus> =
+            unsafe { USB_BUS.insert(UsbBus::new(dp.USB_DEVICE)) };
+
+        // USB device info copied from QMK's planck configuration:
+        let uplink = UsbHid::new(usb_bus, |bus| {
+            UsbDeviceBuilder::new(bus, UsbVidPid(0x03a8, 0xae01))
+                .manufacturer("OLKB")
+                .product("Planck")
+                .device_release(0x0002)
+                .build()
+        });
+
+        //TODO
+        let backlight = Backlight {};
+
+        Self {
+            scanner,
+            uplink,
+            backlight,
+        }
+    }
 }

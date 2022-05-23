@@ -1,0 +1,5 @@
+[build]
+rustflags = [
+    # Workaround for running into rust-lang/rust#83972
+    "-Csymbol-mangling-version=v0",
+]

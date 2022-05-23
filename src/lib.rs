@@ -4,6 +4,7 @@
 
 pub mod backlight;
 pub mod diodes;
+pub mod keyboard;
 pub mod keycode;
 pub mod keymap;
 pub mod pin_group;
