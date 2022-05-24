@@ -1,10 +1,17 @@
 use crate::keycode::{KeyAction, Keycode};
 
+/// A communication link with the host, for sending key events and receiving
+/// indicator updates.
 pub trait Uplink {
     type Error;
 
+    /// Called periodically to allow the component to handle events.
     fn poll(&mut self) -> Result<(), Self::Error>;
 
+    /// Handle a key press/release event.
+    ///
+    /// This may queue the event to be sent later or may send it immediately,
+    /// depending on the protocol architecture and/or implementation details.
     fn key_event(&mut self, keycode: Keycode, action: KeyAction) -> Result<(), Self::Error>;
 }
 

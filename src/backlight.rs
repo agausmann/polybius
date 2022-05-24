@@ -43,6 +43,8 @@ pub trait Backlight {
     }
 }
 
+/// A no-op backlight implementation that can be used by keyboards that do not
+/// support backlight.
 pub struct NoBacklight;
 
 impl Backlight for NoBacklight {

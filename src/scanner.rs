@@ -7,19 +7,26 @@ use crate::diodes::{DiodeConfiguration, KeyPosition, ScanPosition};
 use crate::pin_group::{InputGroup, OutputGroup};
 use core::marker::PhantomData;
 
+/// Scans keys and keeps track of which ones are pressed.
 pub trait Scanner<const ROWS: usize, const COLS: usize> {
     type Error;
 
+    /// Scans the keys and updates the internal list of pressed keys.
     fn poll(&mut self) -> Result<(), Self::Error>;
 
+    /// Whether the given logical key position is currently held down.
     fn is_pressed(&self, row: usize, col: usize) -> bool;
 
+    /// Whether the given logical key position was "just pressed" (transitioned
+    /// from released to pressed, as of the last call to [`poll()`]).
     fn just_pressed(&self, row: usize, col: usize) -> bool;
 
+    /// Whether the given logical key position was "just released" (transitioned
+    /// from pressed to released, as of the last call to [`poll()`]).
     fn just_released(&self, row: usize, col: usize) -> bool;
 }
 
-pub type ScanRow = u32;
+type ScanRow = u32;
 
 /// An implementation of a "scan matrix".
 pub struct ScanMatrix<W, R, D, C, const ROWS: usize, const COLS: usize> {

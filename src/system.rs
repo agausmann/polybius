@@ -5,6 +5,7 @@ use crate::keymap::Keymap;
 use crate::scanner::Scanner;
 use crate::uplink::Uplink;
 
+/// Top-level system implementation that polls components and dispatches events.
 pub struct System<K, B, const ROWS: usize, const COLS: usize> {
     keymap: K,
     keyboard: B,
