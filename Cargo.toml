@@ -1,10 +1,10 @@
 [package]
-name = "kbforge"
+name = "polybius"
 version = "0.1.0"
 authors = ["Adam Gausmann <agausmann@fastmail.com>"]
 edition = "2018"
 description = "A framework for USB keyboard firmwares"
-repository = "https://github.com/agausmann/kbforge"
+repository = "https://github.com/agausmann/polybius"
 license = "BSD-1-Clause"
 keywords = ["keyboard", "firmware", "usb"]
 categories = ["embedded", "no-std"]
@@ -26,8 +26,8 @@ usb-device = { version = "0.2", optional = true }
 usbd-hid = { version = "0.6", optional = true }
 
 [dependencies.atmega-hal]
-git = "https://github.com/agausmann/avr-hal.git"
-branch = "patch/kbforge"
+git = "https://github.com/Rahix/avr-hal.git"
+branch = "main"
 optional = true
 
 [dependencies.atmega-usbd]

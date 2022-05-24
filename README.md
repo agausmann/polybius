@@ -1,6 +1,6 @@
-# KBForge
+# Polybius
 
-An experimental library for developing custom keyboard firmwares in Rust.
+Developing keyboard firmwares with Rust!
 
 ## Goals
 
@@ -18,7 +18,7 @@ the keymap.
 
 - Mimic some of the basic features of [QMK](https://qmk.fm), such as layering
   and custom keycodes. And to some extent, make keymaps easy to make if you
-have prior experience working with QMK at the low level. **Anti-goal: KBForge
+have prior experience working with QMK at the low level. **Anti-goal: Polybius
 is not intended to have complete feature parity with QMK or be a replacement
 for QMK.**
 
@@ -26,5 +26,5 @@ for QMK.**
   system where keyboard and keymap support has to be in-tree / in the same
 project. This is done by leveraging Rust's build tool, Cargo, and the ability
 for individual projects ("crates") to depend on and extend each other. As an
-example, see [my_kbforge](https://github.com/agausmann/my_kbforge), which is
-where I maintain my personal KBForge keymaps for my keyboards.
+example, see [`my_keyboards`](https://github.com/agausmann/my_keyboards), which
+is where I maintain my personal Polybius keymaps for the keyboards I own.

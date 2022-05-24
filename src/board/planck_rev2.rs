@@ -285,7 +285,7 @@ impl PlanckRev2 {
 /// # Example
 ///
 /// ```no_run
-/// use kbforge::board::planck_rev2::{self, PlanckRev2};
+/// use polybius::board::planck_rev2::{self, PlanckRev2};
 ///
 /// let peripherals = atmega_hal::Peripherals::take().unwrap();
 /// let pins = atmega_hal::pins!(peripherals);
