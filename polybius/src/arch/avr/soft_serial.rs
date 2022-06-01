@@ -44,7 +44,12 @@ pub unsafe trait SoftSerialPin: PinOps + Sized {
 }
 
 macro_rules! impl_soft_serial_pin {
-    ($( #[$cfg:meta] $pin_type:ty { portx: $portx:literal , pin_bit: $pin_bit:literal , } )*) => {$(
+    ($( #[$cfg:meta] $pin_type:ty {
+        // The I/O address of the PORTx register for this pin.
+        portx: $portx:literal ,
+        // The index of the bit corresponding to this pin in the PORTx register.
+        pin_bit: $pin_bit:literal ,
+    } )*) => {$(
         #[$cfg]
         unsafe impl SoftSerialPin for $pin_type {
             fn read_byte(pin: &Pin<Input<PullUp>, Self>, cs: &CriticalSection, delay: u8) -> Result<(u8, bool), ReadError> {
@@ -211,19 +216,19 @@ macro_rules! impl_soft_serial_pin {
 
 impl_soft_serial_pin! {
     #[cfg(feature = "atmega32u4")] atmega_hal::port::PD0 {
-        portx: "PORTD",
+        portx: "0x0b",
         pin_bit: 0,
     }
     #[cfg(feature = "atmega32u4")] atmega_hal::port::PD1 {
-        portx: "PORTD",
+        portx: "0x0b",
         pin_bit: 1,
     }
     #[cfg(feature = "atmega32u4")] atmega_hal::port::PD2 {
-        portx: "PORTD",
+        portx: "0x0b",
         pin_bit: 2,
     }
     #[cfg(feature = "atmega32u4")] atmega_hal::port::PD3 {
-        portx: "PORTD",
+        portx: "0x0b",
         pin_bit: 3,
     }
 }
