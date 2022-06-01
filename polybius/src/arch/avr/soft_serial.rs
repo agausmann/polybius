@@ -116,7 +116,7 @@ macro_rules! impl_soft_serial_pin {
                     concat!("sbis ", $portx, ", ", $pin_bit),
                     "inc {continuing}",
 
-                    idx = out(reg) _,
+                    idx = out(reg_upper) _,
                     counter = out(reg) _,
                     bit = out(reg) _,
 
@@ -200,7 +200,7 @@ macro_rules! impl_soft_serial_pin {
                         "dec {counter}",
                         "brne 0b",
 
-                    idx = out(reg) _,
+                    idx = out(reg_upper) _,
                     counter = out(reg) _,
                     bit = out(reg) _,
                     parity = out(reg) _,
