@@ -190,9 +190,9 @@ macro_rules! impl_soft_serial_pin {
 
                     // Reset line
                     "sbrc {continuing}, 0",
-                    concat!("sbi ", $portx, ", ", $pin_bit),
-                    "sbrs {continuing}, 0",
                     concat!("cbi ", $portx, ", ", $pin_bit),
+                    "sbrs {continuing}, 0",
+                    concat!("sbi ", $portx, ", ", $pin_bit),
 
                     // Bit delay (min delay between this word and next sync)
                     "mov {counter}, {delay}",
