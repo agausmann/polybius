@@ -153,9 +153,9 @@ macro_rules! impl_soft_serial_pin {
                     "0:",
                         // Read next bit from {byte}
                         "clr {bit}",
-                        "rol {byte}",
-                        "sbic SREG, 0", // skip if carry clear
+                        "sbrc {byte}, 7",
                         "inc {bit}",
+                        "lsl {byte}",
 
                         // Set/clear bit in PORTx corresponding to value in {bit}
                         // Uniform delay: 5 cycles in either path
