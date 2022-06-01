@@ -1,38 +1,4 @@
-[package]
-name = "polybius"
-version = "0.1.0"
-authors = ["Adam Gausmann <agausmann@fastmail.com>"]
-edition = "2021"
-description = "A framework for USB keyboard firmwares"
-repository = "https://github.com/agausmann/polybius"
-license = "BSD-1-Clause"
-keywords = ["keyboard", "firmware", "usb"]
-categories = ["embedded", "no-std"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-usb = ["usb-device", "usbd-hid"]
-
-# Board selection
-planck_rev2 = ["atmega32u4", "usb", "atmega-usbd"]
-
-# Chip selection
-atmega32u4 = ["atmega-hal/atmega32u4"]
-
-[dependencies]
-embedded-hal = { version = "0.2", features = ["unproven"] }
-usb-device = { version = "0.2", optional = true }
-usbd-hid = { version = "0.6", optional = true }
-
-[dependencies.atmega-hal]
-git = "https://github.com/Rahix/avr-hal.git"
-branch = "main"
-optional = true
-
-[dependencies.atmega-usbd]
-git = "https://github.com/agausmann/atmega-usbd.git"
-optional = true
-
-[dev-dependencies]
-embedded-hal-mock = "0.7"
+[workspace]
+members = [
+    "polybius",
+]

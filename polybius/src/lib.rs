@@ -12,4 +12,5 @@ pub mod scanner;
 pub mod system;
 pub mod uplink;
 
+pub mod arch;
 pub mod board;
