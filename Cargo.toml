@@ -1,4 +1,13 @@
 [workspace]
 members = [
     "polybius",
+    "examples/soft-serial-tx",
 ]
+
+[profile.dev]
+opt-level = "s"
+lto = true
+
+[profile.release]
+opt-level = "s"
+lto = true
