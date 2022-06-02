@@ -13,23 +13,17 @@ fn main() -> ! {
     let dp = Peripherals::take().unwrap();
     let pins = pins!(dp);
 
-    let mut data = pins.pd0.into_output_high();
+    let data = pins.pd0.into_pull_up_input();
     let _debug_clock = pins.pd1.into_output();
     let mut status = pins.pc7.into_output();
     let mut delay: Delay<MHz16> = Delay::new();
 
-    let payload = b"Hello World";
-
-    loop {
-        interrupt::free(|cs| {
-            data.set_low();
-            for &byte in payload {
-                delay.delay_us(20u8);
-                SoftSerialPin::write_byte(&mut data, cs, 15, byte, true);
+    interrupt::free(|cs| {
+        loop {
+            let result = SoftSerialPin::read_byte(&data, cs, 15);
+            if result.is_ok() {
+                status.set_high();
             }
-        });
-        data.set_high();
-        delay.delay_ms(1u8);
-        status.set_high();
-    }
+        }
+    })
 }
