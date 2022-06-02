@@ -44,7 +44,16 @@ pub unsafe trait SoftSerialPin: PinOps + Sized {
 }
 
 macro_rules! impl_soft_serial_pin {
+    (@debug_clk) => {
+        // Toggle debug clock on PD1; to be used inside an asm! macro.
+        // Used to be able to inspect read/write timing using a logic analyzer.
+        // NOTE - this should not be committed uncommented!
+        // "sbi 0x09, 1"
+    };
+
     ($( #[$cfg:meta] $pin_type:ty {
+        // The I/O address of the PINx register for this pin.
+        pinx: $pinx:literal ,
         // The I/O address of the PORTx register for this pin.
         portx: $portx:literal ,
         // The index of the bit corresponding to this pin in the PORTx register.
@@ -60,61 +69,73 @@ macro_rules! impl_soft_serial_pin {
                 let continuing: u8;
 
                 unsafe { asm!(
-                    // Wait for next high transition (sync bit)
-                    "0:",
-                        concat!("sbis ", $portx, ", ", $pin_bit),
-                        "rjmp 0b",
+                    concat!("sbis ", $pinx, ", ", $pin_bit),
+                    "rjmp 2f",
+                        // Line is high (idle state)
+                        "ori {parity}, 0b10",
+                        "rjmp 3f",
+                    "2:",
+                        // Wait for next high transition (sync bit)
+                        "0:",
+                            concat!("sbis ", $pinx, ", ", $pin_bit),
+                            "rjmp 0b",
+                        impl_soft_serial_pin!(@debug_clk),
 
-                    // Half-bit delay (align in-between transitions):
-                    "mov {counter}, {delay}",
-                    "lsr {counter}",
-                    "0:",
-                        "dec {counter}",
+                        // Half-bit delay (align in-between transitions):
+                        "mov {counter}, {delay}",
+                        "lsr {counter}",
+                        "0:",
+                            "dec {counter}",
+                            "brne 0b",
+
+                        "clr {byte}",
+                        "clr {parity}",
+                        "clr {bit}",
+
+                        // Loop body: 6 cycles (not counting delay and NOP padding)
+                        "ldi {idx}, 9",
+                        "0:",
+                            // Bit delay
+                            "mov {counter}, {delay}",
+                            "1:",
+                                "dec {counter}",
+                                "brne 1b",
+
+                            // Padding to align with write_byte loop
+                            "nop; nop; nop; nop",
+
+                            // N.B. out-of-order: the last bit read is the
+                            // parity bit and so it shouldn't be appended to the
+                            // output byte. Reordering these two instructions to
+                            // the top of the loop prevents that from happening.
+                            // On the first iteration, {byte} and {bit} are
+                            // zero, so these instructions effectively don't do
+                            // anything.
+                            "lsl {byte}",
+                            "or {byte}, {bit}",
+
+                            "clr {bit}",
+                            impl_soft_serial_pin!(@debug_clk),
+                            concat!("sbic ", $pinx, ", ", $pin_bit),
+                            "inc {bit}",
+                            "eor {parity}, {bit}",
+
+                        "dec {idx}",
                         "brne 0b",
 
-                    "clr {byte}",
-                    "clr {parity}",
-                    "clr {bit}",
-
-                    // Loop body: 6 cycles (not counting delay and NOP padding)
-                    "ldi {idx}, 9",
-                    "0:",
                         // Bit delay
                         "mov {counter}, {delay}",
-                        "1:",
+                        "0:",
                             "dec {counter}",
-                            "brne 1b",
+                            "brne 0b",
 
-                        // Padding to align with write_byte loop
-                        "nop; nop; nop; nop",
+                        // N.B. continuing is true when line is _low_
+                        "clr {continuing}",
+                        impl_soft_serial_pin!(@debug_clk),
+                        concat!("sbis ", $pinx, ", ", $pin_bit),
+                        "inc {continuing}",
 
-                        // N.B. out-of-order: the last bit read is the parity
-                        // bit and so it shouldn't be appended to the output
-                        // byte. Reordering these two instructions to the top of
-                        // the loop prevents that from happening. On the first
-                        // iteration, {byte} and {bit} are zero, so these
-                        // instructions effectively don't do anything.
-                        "lsl {byte}",
-                        "or {byte}, {bit}",
-
-                        "clr {bit}",
-                        concat!("sbic ", $portx, ", ", $pin_bit),
-                        "inc {bit}",
-                        "eor {parity}, {bit}",
-
-                    "dec {idx}",
-                    "brne 0b",
-
-                    // Bit delay
-                    "mov {counter}, {delay}",
-                    "0:",
-                        "dec {counter}",
-                        "brne 0b",
-
-                    // N.B. continuing is true when line is _low_
-                    "clr {continuing}",
-                    concat!("sbis ", $portx, ", ", $pin_bit),
-                    "inc {continuing}",
+                    "3:",
 
                     idx = out(reg_upper) _,
                     counter = out(reg) _,
@@ -128,6 +149,8 @@ macro_rules! impl_soft_serial_pin {
 
                 if parity == 0 {
                     Ok((byte, continuing != 0))
+                } else if parity & 2 != 0 {
+                    Err(ReadError::Idle)
                 } else {
                     Err(ReadError::ParityError)
                 }
@@ -139,6 +162,7 @@ macro_rules! impl_soft_serial_pin {
                 unsafe { asm!(
                     // Sync bit
                     concat!("sbi ", $portx, ", ", $pin_bit),
+                    impl_soft_serial_pin!(@debug_clk),
 
                     // Bit delay
                     "mov {counter}, {delay}",
@@ -163,6 +187,7 @@ macro_rules! impl_soft_serial_pin {
                         concat!("sbi ", $portx, ", ", $pin_bit),
                         "sbrs {bit}, 0",
                         concat!("cbi ", $portx, ", ", $pin_bit),
+                        impl_soft_serial_pin!(@debug_clk),
 
                         // Update parity
                         "eor {parity}, {bit}",
@@ -181,6 +206,7 @@ macro_rules! impl_soft_serial_pin {
                     concat!("sbi ", $portx, ", ", $pin_bit),
                     "sbrs {parity}, 0",
                     concat!("cbi ", $portx, ", ", $pin_bit),
+                    impl_soft_serial_pin!(@debug_clk),
 
                     // Bit delay
                     "mov {counter}, {delay}",
@@ -193,6 +219,7 @@ macro_rules! impl_soft_serial_pin {
                     concat!("cbi ", $portx, ", ", $pin_bit),
                     "sbrs {continuing}, 0",
                     concat!("sbi ", $portx, ", ", $pin_bit),
+                    impl_soft_serial_pin!(@debug_clk),
 
                     // Bit delay (min delay between this word and next sync)
                     "mov {counter}, {delay}",
@@ -211,24 +238,28 @@ macro_rules! impl_soft_serial_pin {
                 )}
             }
         }
-    )*}
+    )*};
 }
 
 impl_soft_serial_pin! {
     #[cfg(feature = "atmega32u4")] atmega_hal::port::PD0 {
-        portx: "0x0b",
+        pinx: 0x09,
+        portx: 0x0b,
         pin_bit: 0,
     }
     #[cfg(feature = "atmega32u4")] atmega_hal::port::PD1 {
-        portx: "0x0b",
+        pinx: 0x09,
+        portx: 0x0b,
         pin_bit: 1,
     }
     #[cfg(feature = "atmega32u4")] atmega_hal::port::PD2 {
-        portx: "0x0b",
+        pinx: 0x09,
+        portx: 0x0b,
         pin_bit: 2,
     }
     #[cfg(feature = "atmega32u4")] atmega_hal::port::PD3 {
-        portx: "0x0b",
+        pinx: 0x09,
+        portx: 0x0b,
         pin_bit: 3,
     }
 }
@@ -311,6 +342,7 @@ pub enum TransactionError {
 
 pub enum ReadError {
     ParityError,
+    Idle,
 }
 
 enum Bidir<D> {
