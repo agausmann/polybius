@@ -235,7 +235,7 @@ macro_rules! impl_soft_serial_pin {
 
                     delay = in(reg) delay,
                     continuing = in(reg) continuing as u8,
-                    byte = in(reg) byte,
+                    byte = inout(reg) byte => _,
                 )}
             }
         }
