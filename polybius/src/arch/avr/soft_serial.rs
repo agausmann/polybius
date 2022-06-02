@@ -49,6 +49,7 @@ macro_rules! impl_soft_serial_pin {
         // Used to be able to inspect read/write timing using a logic analyzer.
         // NOTE - this should not be committed uncommented!
         // "sbi 0x09, 1"
+        ""
     };
 
     ($( #[$cfg:meta] $pin_type:ty {
@@ -102,7 +103,7 @@ macro_rules! impl_soft_serial_pin {
                                 "brne 1b",
 
                             // Padding to align with write_byte loop
-                            "nop; nop; nop; nop",
+                            "nop; nop; nop; nop; nop",
 
                             // N.B. out-of-order: the last bit read is the
                             // parity bit and so it shouldn't be appended to the
