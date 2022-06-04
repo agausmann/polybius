@@ -102,8 +102,8 @@ macro_rules! impl_soft_serial_pin {
                                 "dec {counter}",
                                 "brne 1b",
 
-                            // 4 cycles padding to match write loop duration
-                            "nop", "nop", "nop", "nop",
+                            // 1 cycle padding to match write loop duration
+                            "nop",
 
                             // N.B. out-of-order: the last bit read is the
                             // parity bit and so it shouldn't be appended to the
@@ -164,47 +164,42 @@ macro_rules! impl_soft_serial_pin {
                     concat!("sbi ", $portx, ", ", $pin_bit),
                     impl_soft_serial_pin!(@debug_clk),
 
-                    // Bit delay
-                    "mov {counter}, {delay}",
-                    "0:",
-                        "dec {counter}",
-                        "brne 0b",
-
                     "clr {parity}",
 
-                    // Loop body: 10 cycles (not counting bit delays and NOPs)
+                    // Loop body: 7 cycles (not counting bit delays and NOPs)
                     "ldi {idx}, 8",
                     "0:",
-                        // Read next bit from {byte}
-                        "clr {bit}",
-                        "sbrc {byte}, 7",
-                        "inc {bit}",
-                        "lsl {byte}",
-
-                        // Set/clear bit in PORTx corresponding to value in {bit}
-                        // Uniform delay: 5 cycles in either path
-                        "sbrc {bit}, 0",
-                        concat!("sbi ", $portx, ", ", $pin_bit),
-                        "sbrs {bit}, 0",
-                        concat!("cbi ", $portx, ", ", $pin_bit),
-                        impl_soft_serial_pin!(@debug_clk),
-
-                        // Update parity
-                        "eor {parity}, {bit}",
-
                         // Bit delay
                         "mov {counter}, {delay}",
                         "1:",
                             "dec {counter}",
                             "brne 1b",
 
+                        // Set/clear bit in PORTx corresponding to MSB of {byte}
+                        // Uniform delay: 5 cycles in either path
+                        "sbrc {byte}, 7",
+                        concat!("sbi ", $portx, ", ", $pin_bit),
+                        "sbrs {byte}, 7",
+                        concat!("cbi ", $portx, ", ", $pin_bit),
+                        impl_soft_serial_pin!(@debug_clk),
+
+                        // Update parity (don't care about lower 7 bits, just MSB)
+                        "eor {parity}, {byte}",
+
+                        "lsl {byte}",
                     "dec {idx}",
                     "brne 0b",
 
+                    // Bit delay
+                    "mov {counter}, {delay}",
+                    "0:",
+                        "dec {counter}",
+                        "brne 0b",
+
                     // Write parity bit
-                    "sbrc {parity}, 0",
+                    "sbrc {parity}, 7",
                     concat!("sbi ", $portx, ", ", $pin_bit),
-                    "sbrs {parity}, 0",
+                    "sbrs {parity}, 7",
                     concat!("cbi ", $portx, ", ", $pin_bit),
                     impl_soft_serial_pin!(@debug_clk),
 
@@ -229,7 +224,6 @@ macro_rules! impl_soft_serial_pin {
 
                     idx = out(reg_upper) _,
                     counter = out(reg) _,
-                    bit = out(reg) _,
                     parity = out(reg) _,
 
                     delay = in(reg) delay,
