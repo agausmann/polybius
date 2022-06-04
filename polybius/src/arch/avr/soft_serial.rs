@@ -82,8 +82,6 @@ macro_rules! impl_soft_serial_pin {
                             "rjmp 0b",
                         impl_soft_serial_pin!(@debug_clk),
 
-                        "subi {delay}, -1",
-
                         // Half-bit delay (align in-between transitions):
                         "mov {counter}, {delay}",
                         "lsr {counter}",
@@ -95,7 +93,7 @@ macro_rules! impl_soft_serial_pin {
                         "clr {parity}",
                         "clr {bit}",
 
-                        // Loop body: 6 cycles (not counting delay and NOP padding)
+                        // Loop body: 6 cycles (not counting bit delays and NOPs)
                         "ldi {idx}, 9",
                         "0:",
                             // Bit delay
@@ -103,6 +101,9 @@ macro_rules! impl_soft_serial_pin {
                             "1:",
                                 "dec {counter}",
                                 "brne 1b",
+
+                            // 4 cycles padding to match write loop duration
+                            "nop", "nop", "nop", "nop",
 
                             // N.B. out-of-order: the last bit read is the
                             // parity bit and so it shouldn't be appended to the
@@ -134,14 +135,13 @@ macro_rules! impl_soft_serial_pin {
                         impl_soft_serial_pin!(@debug_clk),
                         concat!("sbis ", $pinx, ", ", $pin_bit),
                         "inc {continuing}",
-
                     "3:",
 
                     idx = out(reg_upper) _,
                     counter = out(reg) _,
                     bit = out(reg) _,
 
-                    delay = inout(reg) delay => _,
+                    delay = in(reg) delay,
                     byte = out(reg) byte,
                     parity = out(reg) parity,
                     continuing = out(reg) continuing,
@@ -172,7 +172,7 @@ macro_rules! impl_soft_serial_pin {
 
                     "clr {parity}",
 
-                    // Loop body: 10 cycles (not counting delay and NOP padding)
+                    // Loop body: 10 cycles (not counting bit delays and NOPs)
                     "ldi {idx}, 8",
                     "0:",
                         // Read next bit from {byte}
