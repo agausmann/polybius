@@ -66,14 +66,17 @@ macro_rules! impl_soft_serial_pin {
                 let _ = (pin, cs);
 
                 let byte: u8;
-                let parity: u8;
-                let continuing: u8;
+                // Bit 0: parity
+                // Bit 1: idle line
+                // Bit 2: continuing
+                let flags: u8;
 
                 unsafe { asm!(
+                    "clr {flags}",
                     concat!("sbis ", $pinx, ", ", $pin_bit),
                     "rjmp 2f",
                         // Line is high (idle state)
-                        "ori {parity}, 0b10",
+                        "ori {flags}, 0b10",
                         "rjmp 3f",
                     "2:",
                         // Wait for next high transition (sync bit)
@@ -90,7 +93,6 @@ macro_rules! impl_soft_serial_pin {
                             "brne 0b",
 
                         "clr {byte}",
-                        "clr {parity}",
                         "clr {bit}",
 
                         // Loop body: 6 cycles (not counting bit delays and NOPs)
@@ -119,7 +121,7 @@ macro_rules! impl_soft_serial_pin {
                             impl_soft_serial_pin!(@debug_clk),
                             concat!("sbic ", $pinx, ", ", $pin_bit),
                             "inc {bit}",
-                            "eor {parity}, {bit}",
+                            "eor {flags}, {bit}",
 
                         "dec {idx}",
                         "brne 0b",
@@ -131,10 +133,9 @@ macro_rules! impl_soft_serial_pin {
                             "brne 0b",
 
                         // N.B. continuing is true when line is _low_
-                        "clr {continuing}",
                         impl_soft_serial_pin!(@debug_clk),
                         concat!("sbis ", $pinx, ", ", $pin_bit),
-                        "inc {continuing}",
+                        "ori {flags}, 0b100",
                     "3:",
 
                     idx = out(reg_upper) _,
@@ -143,16 +144,19 @@ macro_rules! impl_soft_serial_pin {
 
                     delay = in(reg) delay,
                     byte = out(reg) byte,
-                    parity = out(reg) parity,
-                    continuing = out(reg) continuing,
+                    flags = out(reg) flags,
                 )}
 
-                if parity == 0 {
-                    Ok((byte, continuing != 0))
-                } else if parity & 2 != 0 {
+                let parity = (flags & 0b1);
+                let continuing = (flags & 0b10);
+                let idle = (flags & 0b100);
+
+                if idle != 0 {
                     Err(ReadError::Idle)
-                } else {
+                } else if parity != 0 {
                     Err(ReadError::ParityError)
+                } else {
+                    Ok((byte, continuing != 0))
                 }
             }
 
