@@ -25,7 +25,7 @@ fn main() -> ! {
             data.set_low();
             for &byte in payload {
                 delay.delay_us(20u8);
-                SoftSerialPin::write_byte(&mut data, cs, 15, byte, true);
+                SoftSerialPin::write_byte(&mut data, cs, 5, byte, true);
             }
         });
         data.set_high();

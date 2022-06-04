@@ -82,6 +82,8 @@ macro_rules! impl_soft_serial_pin {
                             "rjmp 0b",
                         impl_soft_serial_pin!(@debug_clk),
 
+                        "subi {delay}, -1",
+
                         // Half-bit delay (align in-between transitions):
                         "mov {counter}, {delay}",
                         "lsr {counter}",
@@ -101,9 +103,6 @@ macro_rules! impl_soft_serial_pin {
                             "1:",
                                 "dec {counter}",
                                 "brne 1b",
-
-                            // Padding to align with write_byte loop
-                            "nop; nop; nop; nop; nop",
 
                             // N.B. out-of-order: the last bit read is the
                             // parity bit and so it shouldn't be appended to the
@@ -142,7 +141,7 @@ macro_rules! impl_soft_serial_pin {
                     counter = out(reg) _,
                     bit = out(reg) _,
 
-                    delay = in(reg) delay,
+                    delay = inout(reg) delay => _,
                     byte = out(reg) byte,
                     parity = out(reg) parity,
                     continuing = out(reg) continuing,

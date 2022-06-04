@@ -20,7 +20,7 @@ fn main() -> ! {
 
     interrupt::free(|cs| {
         loop {
-            let result = SoftSerialPin::read_byte(&data, cs, 15);
+            let result = SoftSerialPin::read_byte(&data, cs, 5);
             if result.is_ok() {
                 status.set_high();
             }
