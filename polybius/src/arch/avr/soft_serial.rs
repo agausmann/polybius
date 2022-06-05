@@ -10,7 +10,10 @@ use atmega_hal::{
         Pin,
     },
 };
-use avr_hal_generic::{avr_device::interrupt::CriticalSection, port::PinOps};
+use avr_hal_generic::{
+    avr_device::interrupt::{self, CriticalSection},
+    port::PinOps,
+};
 use embedded_hal::{
     blocking::delay::DelayUs,
     digital::v2::{OutputPin, PinState},
@@ -32,7 +35,7 @@ pub unsafe trait SoftSerialPin: PinOps + Sized {
         pin: &Pin<Input<PullUp>, Self>,
         cs: &CriticalSection,
         delay: u8,
-    ) -> Result<(u8, bool), ReadError>;
+    ) -> Result<(u8, bool), TransactionError>;
 
     fn write_byte(
         pin: &mut Pin<Output, Self>,
@@ -62,7 +65,7 @@ macro_rules! impl_soft_serial_pin {
     } )*) => {$(
         #[$cfg]
         unsafe impl SoftSerialPin for $pin_type {
-            fn read_byte(pin: &Pin<Input<PullUp>, Self>, cs: &CriticalSection, delay: u8) -> Result<(u8, bool), ReadError> {
+            fn read_byte(pin: &Pin<Input<PullUp>, Self>, cs: &CriticalSection, delay: u8) -> Result<(u8, bool), TransactionError> {
                 let _ = (pin, cs);
 
                 let byte: u8;
@@ -152,9 +155,9 @@ macro_rules! impl_soft_serial_pin {
                 let idle = (flags & 0b100);
 
                 if idle != 0 {
-                    Err(ReadError::Idle)
+                    Err(TransactionError::Idle)
                 } else if parity != 0 {
-                    Err(ReadError::ParityError)
+                    Err(TransactionError::ParityError)
                 } else {
                     Ok((byte, continuing != 0))
                 }
@@ -284,6 +287,8 @@ impl_baudrate! {
     Baud50k { baud_rate: 50_000 }
 }
 
+// High-level transaction procotol implemented using SoftSerialPin.
+// TODO: Need more graceful handling of parity errors, timeouts, desync.
 pub struct Serial<D, Clk, B> {
     pin: Bidir<D>,
     delay: Delay<Clk>,
@@ -309,8 +314,8 @@ where
         &mut self,
         request: &[u8],
         response: &mut [u8],
-    ) -> Result<usize, ReadError> {
-        let result = (|| {
+    ) -> Result<usize, TransactionError> {
+        let result = interrupt::free(|cs| {
             // Pulse low to notify receiver
             self.pin.make_output(PinState::Low);
             self.delay.delay_us(10);
@@ -321,24 +326,80 @@ where
             while input.is_low() {}
             self.delay.delay_us(10);
 
-            todo!()
-        })();
+            self.send_packet(cs, request);
+            let bytes_received = self.recv_packet(cs, response)?;
+            Ok(bytes_received)
+        });
         self.pin.make_input();
         result
     }
 
-    pub fn recv_transaction(&mut self) {
-        todo!()
+    pub fn recv_transaction(&mut self) -> Result<(), TransactionError> {
+        let result = interrupt::free(|cs| {
+            let input = self.pin.make_input();
+            // Wait for pulse to finish
+            while input.is_low() {}
+            self.delay.delay_us(10);
+
+            // Send ACK pulse
+            self.pin.make_output(PinState::Low);
+            self.delay.delay_us(10);
+            self.pin.make_input();
+
+            // Stand-in echo implementation.
+            //TODO external interface for request handling.
+            let mut data = [0u8; 16];
+            let bytes_read = self.recv_packet(cs, &mut data)?;
+            self.send_packet(cs, &data[..bytes_read]);
+            Ok(())
+        });
+        self.pin.make_input();
+        result
+    }
+
+    fn send_packet(&mut self, cs: &CriticalSection, data: &[u8]) {
+        // Pull line low (SOT)
+        let mut output = self.pin.make_output(PinState::Low);
+        self.delay.delay_us(10);
+
+        for (index, &byte) in data.iter().enumerate() {
+            SoftSerialPin::write_byte(
+                &mut output,
+                cs,
+                B::DELAY_ITERS,
+                byte,
+                index < data.len() - 1,
+            );
+        }
+        self.pin.make_input();
+    }
+
+    fn recv_packet(
+        &mut self,
+        cs: &CriticalSection,
+        data: &mut [u8],
+    ) -> Result<usize, TransactionError> {
+        // Wait for line pulled low (SOT)
+        let input = self.pin.make_input();
+        while input.is_high() {}
+
+        let mut index = 0;
+        loop {
+            let (byte, continuing) = SoftSerialPin::read_byte(&input, cs, B::DELAY_ITERS)?;
+            data[index] = byte;
+            index += 1;
+            if !continuing {
+                break;
+            } else if index >= data.len() {
+                return Err(TransactionError::BufferOverflow);
+            }
+        }
+        Ok(index)
     }
 }
 
 pub enum TransactionError {
     BufferOverflow,
-    ReceiverNak,
-    //TODO Timeout,
-}
-
-pub enum ReadError {
     ParityError,
     Idle,
 }
