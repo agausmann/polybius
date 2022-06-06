@@ -151,8 +151,8 @@ macro_rules! impl_soft_serial_pin {
                 )}
 
                 let parity = (flags & 0b1);
-                let continuing = (flags & 0b10);
-                let idle = (flags & 0b100);
+                let idle = (flags & 0b10);
+                let continuing = (flags & 0b100);
 
                 if idle != 0 {
                     Err(TransactionError::Idle)
