@@ -1,4 +1,4 @@
 //! Architecture-specific utilities.
 
-#[cfg(target_arch = "avr")]
+#[cfg(any(test, target_arch = "avr"))]
 pub mod avr;
