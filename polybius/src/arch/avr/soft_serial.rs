@@ -360,9 +360,13 @@ where
     fn send_packet(&mut self, cs: &CriticalSection, data: &[u8]) {
         // Pull line low (SOT)
         let mut output = self.pin.make_output(PinState::Low);
-        self.delay.delay_us(10);
 
         for (index, &byte) in data.iter().enumerate() {
+            //TODO adjust inter-byte delay based on CPU freq.
+            // RX has some overhead checking various conditions between bytes
+            // alternatively, create a sync protocol for RX to notify when ready
+            self.delay.delay_us(20);
+
             SoftSerialPin::write_byte(
                 &mut output,
                 cs,
