@@ -2,29 +2,31 @@
 
 Developing keyboard firmwares with Rust!
 
-## Goals
+**Note: This is very unstable!** There will be bugs, and the API may change
+drastically before the first published version.
 
-- **Increased type safety** / stronger compile-time guarantees compared to
-  keebrs/keyberon/other Rust frameworks.  Because of recent improvements to
-fixed-size arrays, and const generics more generally, it's possible to
-statically guarantee that the various components (e.g. scanner and keymap) have
-the same understanding of the keyboard's physical layout. If there's a size
-mismatch anywhere, then it will be caught as a compile-time error, instead of
-becoming a runtime error which is more difficult to debug on embedded hardware.
+Hardware support is also lacking, but that can be improved! I am slowly adding
+support for my keyboards (including split ones), and I encourage you to write
+your own driver crates too. Feel free to open a pull-request, and I will do my best
+to keep it up-to-date with the latest changes in the core.
 
-- Modularity, mainly so that the immutable physical details of a particular
-  keyboard model can be easily separated from user-customizable features like
-the keymap.
+## Features
 
-- Mimic some of the basic features of [QMK](https://qmk.fm), such as layering
-  and custom keycodes. And to some extent, make keymaps easy to make if you
-have prior experience working with QMK at the low level. **Anti-goal: Polybius
-is not intended to have complete feature parity with QMK or be a replacement
-for QMK.**
+- **Modular design.** Polybius is intended to be a simple "glue" library, the
+bridge between keyboard support packages and user-defined keymaps. Both of
+these can and should be implemented as separate crates.
 
-- Allow components to be implemented "out-of-tree," in contrast to QMK's build
-  system where keyboard and keymap support has to be in-tree / in the same
-project. This is done by leveraging Rust's build tool, Cargo, and the ability
-for individual projects ("crates") to depend on and extend each other. As an
-example, see [`my_keyboards`](https://github.com/agausmann/my_keyboards), which
-is where I maintain my personal Polybius keymaps for the keyboards I own.
+- **Type-checked keymaps and matrix I/O.** Uses Rust's powerful type system
+and compile-time evaluation to validate that:
+  - The user's keymap matches the layout specified by the hardware.
+  - The correct number of I/O for rows and columns is provided by the hardware
+  support package.
+  - The I/O direction of rows and columns matches the diode configuration.
+
+## Featured Crates
+
+- [my_keyboards][agausmann/my_keyboards] by [Adam Gausmann][agausmann] -
+Examples of end-user code using Polybius; keymaps for the keyboards I own.
+
+[agausmann]: https://github.com/agausmann
+[agausmann/my_keyboards]: https://github.com/agausmann/my_keyboards
