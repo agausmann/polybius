@@ -13,6 +13,9 @@ pub trait Uplink {
     /// This may queue the event to be sent later or may send it immediately,
     /// depending on the protocol architecture and/or implementation details.
     fn key_event(&mut self, keycode: Keycode, action: KeyAction) -> Result<(), Self::Error>;
+
+    /// Release all pressed keys except for modifiers.
+    fn clear_keyboard_but_mods(&mut self) -> Result<(), Self::Error>;
 }
 
 #[cfg(feature = "usb")]
@@ -140,6 +143,14 @@ pub mod usb {
                     }
                 }
             }
+            Ok(())
+        }
+
+        fn clear_keyboard_but_mods(&mut self) -> Result<(), Self::Error> {
+            for slot in &mut self.report.keycodes {
+                *slot = 0;
+            }
+            self.pending = true;
             Ok(())
         }
     }

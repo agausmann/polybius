@@ -1,9 +1,29 @@
+use fullhouse::Deque;
+
 use crate::backlight::Backlight;
 use crate::keyboard::Keyboard;
 use crate::keycode::{KeyAction, Keycode, SystemKeycode};
 use crate::keymap::Keymap;
+use crate::mutex::Mutex;
 use crate::scanner::Scanner;
 use crate::uplink::Uplink;
+
+#[derive(Clone)]
+enum Request {
+    ClearKeyboardButMods,
+}
+
+static REQUESTS: Mutex<Deque<Request, 16>> = Mutex::new(Deque::new());
+
+fn try_send(req: Request) {
+    if let Some(mut deque) = REQUESTS.try_lock() {
+        let _ = deque.push_back(req);
+    }
+}
+
+pub fn clear_keyboard_but_mods() {
+    try_send(Request::ClearKeyboardButMods);
+}
 
 /// Top-level system implementation that polls components and dispatches events.
 pub struct System<K, B, const ROWS: usize, const COLS: usize> {
@@ -36,6 +56,16 @@ where
             }
         }
         self.keyboard.uplink().poll().map_err(Error::Uplink)?;
+        while let Some(request) = REQUESTS.try_lock().and_then(|mut deque| deque.pop_front()) {
+            match request {
+                Request::ClearKeyboardButMods => {
+                    self.keyboard
+                        .uplink()
+                        .clear_keyboard_but_mods()
+                        .map_err(Error::Uplink)?;
+                }
+            }
+        }
         Ok(())
     }
 

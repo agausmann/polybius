@@ -2,6 +2,7 @@
 
 use crate::keycode::qmk::{KC_NO, KC_TRANSPARENT};
 use crate::keycode::{KeyAction, Keycode, LayerAction};
+use crate::system;
 
 pub trait Keymap<const ROWS: usize, const COLS: usize> {
     fn get(&self, row: usize, col: usize) -> Keycode;
@@ -11,34 +12,43 @@ pub trait Keymap<const ROWS: usize, const COLS: usize> {
     }
 }
 
-pub type Simple<const ROWS: usize, const COLS: usize> = &'static [[Keycode; COLS]; ROWS];
+pub struct Simple<const ROWS: usize, const COLS: usize>(pub &'static [[Keycode; COLS]; ROWS]);
 
 impl<const ROWS: usize, const COLS: usize> Keymap<ROWS, COLS> for Simple<ROWS, COLS> {
     fn get(&self, row: usize, col: usize) -> Keycode {
-        self[row][col]
+        self.0[row][col]
     }
 }
 
 pub struct Layered<const ROWS: usize, const COLS: usize, const LAYERS: usize> {
-    pub layer_mask: u32,
-    pub layers: &'static [[[Keycode; COLS]; ROWS]; LAYERS],
+    layer_mask: u32,
+    layers: &'static [[[Keycode; COLS]; ROWS]; LAYERS],
 }
 
 impl<const ROWS: usize, const COLS: usize, const LAYERS: usize> Layered<ROWS, COLS, LAYERS> {
+    pub fn new(layers: &'static [[[Keycode; COLS]; ROWS]; LAYERS]) -> Self {
+        Self {
+            layer_mask: 1,
+            layers,
+        }
+    }
     pub fn is_layer_enabled(&self, layer: u8) -> bool {
         (self.layer_mask & (1 << layer)) != 0
     }
 
     pub fn enable_layer(&mut self, layer: u8) {
         self.layer_mask |= 1 << layer;
+        system::clear_keyboard_but_mods();
     }
 
     pub fn disable_layer(&mut self, layer: u8) {
         self.layer_mask &= !(1 << layer);
+        system::clear_keyboard_but_mods();
     }
 
     pub fn toggle_layer(&mut self, layer: u8) {
         self.layer_mask ^= 1 << layer;
+        system::clear_keyboard_but_mods();
     }
 }
 

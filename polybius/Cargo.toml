@@ -22,6 +22,8 @@ atmega32u4 = ["atmega-hal/atmega32u4", "avr-hal-generic"]
 
 [dependencies]
 embedded-hal = { version = "0.2", features = ["unproven"] }
+fullhouse = "0.1"
+lock_api = "0.4"
 usb-device = { version = "0.2", optional = true }
 usbd-hid = { version = "0.6", optional = true }
 
