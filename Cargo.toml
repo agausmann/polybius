@@ -2,6 +2,7 @@
 members = [
     "polybius",
     "keyboards/planck",
+    "keyboards/viterbi",
 ]
 
 [profile.dev]

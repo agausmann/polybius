@@ -1,0 +1,23 @@
+[package]
+name = "polybius-viterbi"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+embedded-hal = { version = "0.2", features = ["unproven"] }
+usb-device = "0.2"
+
+[dependencies.atmega-hal]
+git = "https://github.com/Rahix/avr-hal.git"
+branch = "main"
+features = ["atmega32u4"]
+
+[dependencies.atmega-usbd]
+git = "https://github.com/agausmann/atmega-usbd.git"
+
+[dependencies.polybius]
+version = "0.1.0"
+path = "../../polybius"
+features = ["usb"]
