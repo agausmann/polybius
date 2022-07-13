@@ -288,11 +288,11 @@ impl PlanckRev2 {
 /// # Example
 ///
 /// ```no_run
-/// use polybius::board::planck_rev2::{self, PlanckRev2};
+/// use polybius_planck::rev2::PlanckRev2;
 ///
 /// let peripherals = atmega_hal::Peripherals::take().unwrap();
 /// let pins = atmega_hal::pins!(peripherals);
-/// let keyboard: PlanckRev2 = planck_rev2::from_parts!(peripherals, pins);
+/// let keyboard: PlanckRev2 = polybius_planck::rev2::from_parts!(peripherals, pins);
 ///
 /// // Can still take other parts:
 /// let tc1 = peripherals.TC3;
@@ -301,7 +301,7 @@ impl PlanckRev2 {
 #[macro_export]
 macro_rules! planck_rev2 {
     ($dp:expr, $pins:expr) => {
-        $crate::board::planck_rev2::PlanckRev2::from_parts(
+        $crate::rev2::PlanckRev2::from_parts(
             $dp.PLL,
             $dp.TC0,
             $dp.USB_DEVICE,
