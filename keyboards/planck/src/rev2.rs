@@ -158,29 +158,7 @@ impl PlanckRev2 {
     pub fn new() -> Self {
         let dp = Peripherals::take().unwrap();
         let pins = atmega_hal::pins!(dp);
-        Self::from_parts(
-            dp.PLL,
-            dp.TC0,
-            dp.USB_DEVICE,
-            pins.pb0,
-            pins.pb4,
-            pins.pb5,
-            pins.pb6,
-            pins.pb7,
-            pins.pc7,
-            pins.pd0,
-            pins.pd4,
-            pins.pd5,
-            pins.pd6,
-            pins.pd7,
-            pins.pe6,
-            pins.pf0,
-            pins.pf1,
-            pins.pf4,
-            pins.pf5,
-            pins.pf6,
-            pins.pf7,
-        )
+        from_parts!(dp, pins)
     }
 
     /// Initialize the keyboard, taking ownership of only the peripherals
