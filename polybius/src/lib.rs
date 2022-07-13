@@ -1,7 +1,6 @@
 #![no_std]
 #![feature(generic_const_exprs)]
 #![deny(unsafe_op_in_unsafe_fn)]
-#![cfg_attr(target_arch = "avr", feature(asm_experimental_arch))]
 
 pub mod backlight;
 pub mod diodes;
@@ -15,4 +14,3 @@ pub mod system;
 pub mod uplink;
 
 pub mod arch;
-pub mod board;

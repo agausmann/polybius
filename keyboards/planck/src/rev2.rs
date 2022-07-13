@@ -1,22 +1,25 @@
-use crate::diodes::ColToRow;
-use crate::keyboard::Keyboard;
-use crate::scanner::{Direct, ScanMatrix};
-use crate::uplink::usb::UsbHid;
-use atmega_hal::pac::{PLL, TC0, USB_DEVICE};
-use atmega_hal::port::mode::{Floating, Output};
-use atmega_hal::port::{PB7, PE6};
 use atmega_hal::{
     clock::MHz16,
     delay::Delay,
-    pac::Peripherals,
+    pac::{Peripherals, PLL, TC0, USB_DEVICE},
+    port::mode::{Floating, Output},
     port::mode::{Input, OpenDrain, PullUp},
     port::{Pin, PB0, PB4, PB5, PB6, PC7, PD0, PD4, PD5, PD6, PD7, PF0, PF1, PF4, PF5, PF6, PF7},
+    port::{PB7, PE6},
 };
 use atmega_usbd::UsbBus;
 use core::cmp::min;
 use embedded_hal::blocking::delay::DelayUs;
-use usb_device::bus::UsbBusAllocator;
-use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
+use polybius::{
+    diodes::ColToRow,
+    keyboard::Keyboard,
+    scanner::{Direct, ScanMatrix},
+    uplink::usb::UsbHid,
+};
+use usb_device::{
+    bus::UsbBusAllocator,
+    device::{UsbDeviceBuilder, UsbVidPid},
+};
 
 pub const ROWS: usize = 4;
 pub const COLS: usize = 12;
@@ -91,7 +94,7 @@ const BACKLIGHT_LEVELS: u8 = 4;
 // broadcast to each of the four 2-bit chunks:
 const BACKLIGHT_OCR_MULT: u8 = 0b01010101;
 
-impl crate::backlight::Backlight for Backlight {
+impl polybius::backlight::Backlight for Backlight {
     fn num_levels(&self) -> u8 {
         BACKLIGHT_LEVELS
     }

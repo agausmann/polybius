@@ -14,12 +14,6 @@ categories = ["embedded", "no-std"]
 [features]
 usb = ["usb-device", "usbd-hid"]
 
-# Board selection
-planck_rev2 = ["atmega32u4", "usb", "atmega-usbd"]
-
-# Chip selection
-atmega32u4 = ["atmega-hal/atmega32u4", "avr-hal-generic"]
-
 [dependencies]
 embedded-hal = { version = "0.2", features = ["unproven"] }
 fullhouse = "0.1"
@@ -27,19 +21,8 @@ lock_api = "0.4"
 usb-device = { version = "0.2", optional = true }
 usbd-hid = { version = "0.6", optional = true }
 
-[dependencies.atmega-hal]
-git = "https://github.com/Rahix/avr-hal.git"
-branch = "main"
-optional = true
-
-[dependencies.avr-hal-generic]
-git = "https://github.com/Rahix/avr-hal.git"
-branch = "main"
-optional = true
-
-[dependencies.atmega-usbd]
-git = "https://github.com/agausmann/atmega-usbd.git"
-optional = true
+[target.'cfg(any(test, target_arch = "avr"))'.dependencies]
+avr-device = "0.3"
 
 [dev-dependencies]
 embedded-hal-mock = "0.7"

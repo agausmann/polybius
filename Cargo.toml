@@ -1,8 +1,7 @@
 [workspace]
 members = [
     "polybius",
-    "examples/soft-serial-rx",
-    "examples/soft-serial-tx",
+    "keyboards/planck",
 ]
 
 [profile.dev]

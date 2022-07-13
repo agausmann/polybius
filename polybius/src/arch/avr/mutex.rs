@@ -1,6 +1,6 @@
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use avr_hal_generic::avr_device::interrupt;
+use avr_device::interrupt;
 use lock_api::{GuardSend, RawMutex};
 
 pub struct AvrMutex {
