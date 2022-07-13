@@ -1,2 +1,5 @@
-#[cfg(any(target_arch = "avr", test))]
-pub type Mutex<T> = lock_api::Mutex<crate::arch::avr::mutex::AvrMutex, T>;
+#[cfg(target_arch = "avr")]
+pub type Mutex<T> = crate::arch::avr::Mutex<T>;
+
+#[cfg(not(target_arch = "avr"))]
+pub type Mutex<T> = parking_lot::Mutex<T>;

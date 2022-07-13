@@ -1,14 +1,16 @@
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use avr_device::interrupt;
-use lock_api::{GuardSend, RawMutex};
+use lock_api::GuardSend;
 
-pub struct AvrMutex {
+pub type Mutex<T> = lock_api::Mutex<RawMutex, T>;
+
+pub struct RawMutex {
     locked: AtomicBool,
     reenable: AtomicBool,
 }
 
-unsafe impl RawMutex for AvrMutex {
+unsafe impl lock_api::RawMutex for RawMutex {
     type GuardMarker = GuardSend;
 
     const INIT: Self = Self {
