@@ -20,10 +20,12 @@ fullhouse = "0.1"
 lock_api = "0.4"
 usb-device = { version = "0.2", optional = true }
 usbd-hid = { version = "0.6", optional = true }
-parking_lot = "0.12"
 
-[target.'cfg(any(test, target_arch = "avr"))'.dependencies]
+[target.'cfg(target_arch = "avr")'.dependencies]
 avr-device = "0.3"
+
+[target.'cfg(not(target_arch = "avr"))'.dependencies]
+parking_lot = "0.12"
 
 [dev-dependencies]
 embedded-hal-mock = "0.7"
