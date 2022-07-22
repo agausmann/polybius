@@ -13,6 +13,7 @@ categories = ["embedded", "no-std"]
 
 [features]
 usb = ["usb-device", "usbd-hid"]
+atmega32u4 = ["atmega-hal/atmega32u4"]
 
 [dependencies]
 embedded-hal = { version = "0.2", features = ["unproven"] }
@@ -20,10 +21,13 @@ fullhouse = "0.1"
 lock_api = "0.4"
 usb-device = { version = "0.2", optional = true }
 usbd-hid = { version = "0.6", optional = true }
+
+[target.'cfg(not(target_arch = "avr"))'.dependencies]
 parking_lot = "0.12"
 
-[target.'cfg(any(test, target_arch = "avr"))'.dependencies]
+[target.'cfg(target_arch = "avr")'.dependencies]
 avr-device = "0.3"
+atmega-hal = { git = "https://github.com/Rahix/avr-hal.git", branch = "main" }
 
 [dev-dependencies]
 embedded-hal-mock = "0.7"

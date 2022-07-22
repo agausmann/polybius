@@ -20,4 +20,4 @@ git = "https://github.com/agausmann/atmega-usbd.git"
 [dependencies.polybius]
 version = "0.1.0"
 path = "../../polybius"
-features = ["usb"]
+features = ["usb", "atmega32u4"]

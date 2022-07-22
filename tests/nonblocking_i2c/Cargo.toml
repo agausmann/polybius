@@ -1,0 +1,11 @@
+[package]
+publish = false
+name = "avr_nonblocking_i2c"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+avr-device = "0.3"
+atmega-hal = { git = "https://github.com/Rahix/avr-hal.git", branch = "main", features = ["atmega32u4", "rt"] }
+polybius = { path = "../../polybius", features = ["atmega32u4"] }
+avr-std-stub = "1.0"

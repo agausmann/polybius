@@ -2,7 +2,8 @@
 members = [
     "polybius",
     "keyboards/planck",
-    "keyboards/viterbi",
+    # "keyboards/viterbi",
+    "tests/nonblocking_i2c",
 ]
 
 [profile.dev]
