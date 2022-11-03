@@ -1,14 +1,14 @@
 # Polybius
 
-Developing keyboard firmwares with Rust!
+Keyboard firmware experiments on the bleeding edge of Rust's const-eval.
 
-**Note: This is very unstable!** There will be bugs, and the API may change
-drastically before the first published version.
+**NOTE: This crate is not being maintained anymore.** I've encountered
+difficulties porting other architectures and keyboards (especially split)
+to this design, and so instead of trying to port everything to this and
+adapt it, I have decided to move on.
 
-Hardware support is also lacking, but that can be improved! I am slowly adding
-support for my keyboards (including split ones), and I encourage you to write
-your own driver crates too. Feel free to open a pull-request, and I will do my best
-to keep it up-to-date with the latest changes in the core.
+I will eventually buiild a new framework, but first, I will be building
+a lot of firmwares from scratch. Abstractions will come later.
 
 ## Features
 
